@@ -84,6 +84,10 @@ in
       install_jpm_project sh ${sh}
       install_jpm_project spork ${spork}
 
+      # JPM emits /usr/bin/env launchers after the normal source patch phase.
+      # That interpreter path is absent from Linux build sandboxes.
+      patchShebangs "$out/bin"
+
       runHook postInstall
     '';
   }

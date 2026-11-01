@@ -65,6 +65,9 @@ in
     export HEY_PROCESS_SUPERVISOR="${supervisor}/bin/nixi-process-supervisor"
     export HEY_RUNTIME_PYTHON="${python}/bin/python3"
     export NIXI_COMMAND_FIXTURE="${commands}"
+    # A present script with a missing shebang interpreter reports ENOENT too.
+    read -r judgeShebang < "${deps}/bin/judge"
+    test "$judgeShebang" = '#!${janet}/bin/janet'
     python "$src/test_tools/run_contract_tests.py"
     touch "$out"
   ''
