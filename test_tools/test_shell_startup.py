@@ -12,6 +12,19 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def completion_fixture(destination, trust_root):
+    # Nix's Linux build directory can have foreign-owned/writable ancestors.
+    # Model trusted host ancestry outside our private fixture, while retaining
+    # every ownership/mode check on the fixture root and all children. Never
+    # introduce a trust-boundary override into the installed shell code.
+    source = (ROOT / "assets/zsh/completion.zsh").read_text()
+    endpoint = '[[ $current == / ]] && return 0'
+    if source.count(endpoint) != 1:
+        raise ValueError("Completion ancestry guard changed; review fixture boundary")
+    destination.write_text(source.replace(
+        endpoint, f'[[ $current == {shlex.quote(str(trust_root.resolve()))} ]] && return 0'))
+
+
 class ShellStartup(unittest.TestCase):
     def setUp(self):
         scratch = tempfile.TemporaryDirectory(prefix="nixi-shell-")
@@ -24,6 +37,8 @@ class ShellStartup(unittest.TestCase):
         self.env = {"HOME": str(self.root), "PATH": str(self.bin) + ":" + os.environ["PATH"],
                     "ZDOTDIR": str(self.zdot), "TERM": "xterm-256color",
                     "XDG_CACHE_HOME": str(self.root / "cache")}
+        self.completion_script = self.root / "completion.zsh"
+        completion_fixture(self.completion_script, self.root)
         for name in ("plugins.zsh", "completion.zsh", "keybinds.zsh", "aliases.zsh"):
             (self.zdot / name).write_text("# fixture\n")
         (self.zdot / "extra.zshrc").write_text("autopair-init() { :; }\n")
@@ -54,7 +69,7 @@ class ShellStartup(unittest.TestCase):
     def completion(self, *fpaths):
         return self.zsh('fpath=("${@:3}" "$1"); source "$2"; '
                         'print -r -- "COMPLETION=${_comps[nixi-fixture]:-none}"; '
-                        'print -r -- "CACHE=$ZCOMPCACHE"', self.completion_core, ROOT / "assets/zsh/completion.zsh", *fpaths)
+                        'print -r -- "CACHE=$ZCOMPCACHE"', self.completion_core, self.completion_script, *fpaths)
 
     def test_completion_audits_use_local_case_sensitive_globbing(self):
         cache_directory = self.root / "cache/zsh"
@@ -64,7 +79,7 @@ class ShellStartup(unittest.TestCase):
                 cache_directory.chmod(mode)
                 result = self.zsh('compinit() { print -r -- "AUDIT_CASE_GLOB=$options[caseglob]"; }; '
                                   'source "$1"; print -r -- "SHELL_CASE_GLOB=$options[caseglob]"',
-                                  ROOT / "assets/zsh/completion.zsh")
+                                  self.completion_script)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("AUDIT_CASE_GLOB=on", result.stdout)
                 self.assertIn("SHELL_CASE_GLOB=off", result.stdout)
@@ -87,7 +102,7 @@ class ShellStartup(unittest.TestCase):
             # A cached autoload name may remain, but the unsafe search path may
             # never remain available for resolution.
             probe = self.zsh('fpath=("$1" "$3"); source "$2"; '
-                             '(( ${fpath[(Ie)$1]} == 0 ))', untrusted, ROOT / "assets/zsh/completion.zsh", self.completion_core)
+                             '(( ${fpath[(Ie)$1]} == 0 ))', untrusted, self.completion_script, self.completion_core)
             self.assertEqual(probe.returncode, 0, probe.stderr)
             if not cached:
                 self.assertIn("COMPLETION=none", result.stdout)
@@ -98,7 +113,9 @@ class ShellStartup(unittest.TestCase):
                 self.env["XDG_CACHE_HOME"] = str(self.root / attack)
                 result = self.completion()
                 self.assertEqual(result.returncode, 0, result.stderr)
-                cache = Path(next(line[6:] for line in result.stdout.splitlines() if line.startswith("CACHE=")))
+                cache_name = next(line[6:] for line in result.stdout.splitlines() if line.startswith("CACHE="))
+                self.assertTrue(cache_name, result.stderr)
+                cache = Path(cache_name)
                 if attack == "source":
                     cache.write_text("print UNSAFE_CACHE\n")
                     cache.chmod(0o666)
@@ -118,6 +135,13 @@ class ShellStartup(unittest.TestCase):
                 self.assertIn("unsafe completion cache", result.stderr)
                 self.assertNotIn("UNSAFE_CACHE", result.stdout)
                 self.assertIn("CACHE=\n", result.stdout)
+
+    def test_fixture_boundary_still_rejects_an_unsafe_root(self):
+        self.root.chmod(0o777)
+        result = self.completion()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("unsafe completion cache", result.stderr)
+        self.assertIn("CACHE=\n", result.stdout)
 
     def test_aliases_preserve_path_installed_hey_without_activation(self):
         self.executable("hey", 'print("PACKAGED_HEY")\n')
@@ -251,4 +275,7 @@ else:
 
 
 if __name__ == "__main__":
-    unittest.main()
+    if len(sys.argv) == 4 and sys.argv[1] == "--completion-fixture":
+        completion_fixture(Path(sys.argv[2]), Path(sys.argv[3]))
+    else:
+        unittest.main()

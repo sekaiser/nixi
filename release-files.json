@@ -333,7 +333,7 @@
     },
     {
       "path": "test_tools/test_shell_startup.py",
-      "sha256": "106562fefc634837eb2617c15f57569ba98c1bb4df2ae49d908def5c35a0d7df",
+      "sha256": "911133bf7cadc3da8202fc07e457678269038a1ebb6852d3525b43db400a5848",
       "executable": false
     },
     {
@@ -568,7 +568,7 @@
     },
     {
       "path": "checks/zsh-plugins.nix",
-      "sha256": "8cb6821b9a3a27901ebb5e7549d4ae1ff93a1507eb6ffcb48a7e44f2cd5782c7",
+      "sha256": "ef0c35683c41c3e12fa2cd77295aba776c2da2326a8e8904bc76870ad802ead1",
       "executable": false
     },
     {
@@ -663,7 +663,7 @@
     },
     {
       "path": "checks/ssh-certificate-lifecycle.nix",
-      "sha256": "8200d22a6a90c19b328cb58c98d2459a93cb4671399f5e51de99d996a3e43f80",
+      "sha256": "a283f3f2e9e2fa66e77d02098a17fde9743d75a9332472a2d107390c7735d529",
       "executable": false
     },
     {

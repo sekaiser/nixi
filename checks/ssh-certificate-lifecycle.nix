@@ -103,13 +103,17 @@
         system = stdenv.hostPlatform.system;
         module = _: {
           config = {
-            user = {
-              name = "fixture";
-              home =
-                if stdenv.isDarwin
-                then "/Users/fixture"
-                else "/home/fixture";
-            };
+            user =
+              {
+                name = "fixture";
+                home =
+                  if stdenv.isDarwin
+                  then "/Users/fixture"
+                  else "/home/fixture";
+              }
+              # This synthetic account bypasses the primary-user profile;
+              # supply its group too (NixOS otherwise leaves it empty).
+              // lib.optionalAttrs (!stdenv.isDarwin) {group = "users";};
             home.stateVersion = "26.05";
             system.stateVersion =
               if stdenv.isDarwin
@@ -300,7 +304,10 @@ in
   assert builtins.elem "shutdown.target" socketConfig.systemd.sockets.sshd.before;
     runCommand "ssh-certificate-lifecycle-check" {nativeBuildInputs = [openssh coreutils python3];} ''
       export PYTHONDONTWRITEBYTECODE=1
-      ${literalLabel} > literal-label.log 2> literal-label.err
+      if ! ${literalLabel} > literal-label.log 2> literal-label.err; then
+        cat literal-label.err >&2
+        exit 1
+      fi
       test ! -s literal-label.err
       grep -Fq 'fixture-$(printf UNEXPECTED_LABEL_EXPANSION >&2)' literal-label.log
       python - ${parserFixtures} <<'PY'

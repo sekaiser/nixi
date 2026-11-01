@@ -151,7 +151,8 @@ in
       mkdir -p state/config/zsh state/cache state/data state/home
       cp ${../assets/zsh}/.zshrc state/config/zsh/.zshrc
       cp ${plugins} state/config/zsh/plugins.zsh
-      cp ${../assets/zsh/completion.zsh} state/config/zsh/completion.zsh
+      python "$src/test_tools/test_shell_startup.py" --completion-fixture \
+        state/config/zsh/completion.zsh "$PWD/state"
       cp ${../assets/zsh/keybinds.zsh} state/config/zsh/keybinds.zsh
       cp ${../assets/zsh/aliases.zsh} state/config/zsh/aliases.zsh
       touch state/config/zsh/extra.zshrc
