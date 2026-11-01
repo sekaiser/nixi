@@ -18,6 +18,21 @@ class ConfigTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name).resolve()
+        # Nix's Linux sandbox can expose ancestors owned by a different UID.
+        # Model trusted host ancestry only outside our disposable fixture;
+        # ownership, modes and symlinks inside it remain real and checked.
+        outside = set(self.root.parents)
+        real_stat = Path.stat
+        def fixture_stat(path, *args, **kwargs):
+            info = real_stat(path, *args, **kwargs)
+            if path in outside:
+                fields = list(info)
+                fields[0], fields[4] = stat.S_IFDIR | 0o755, 0
+                return os.stat_result(fields)
+            return info
+        ancestry = patch.object(Path, "stat", fixture_stat)
+        ancestry.start()
+        self.addCleanup(ancestry.stop)
         self.defaults = self.root / "defaults.yml"
         self.defaults.write_text("theme:\n  dark: titanium\nmodelRoles:\n  slow: example/model\n")
         self.config = self.root / "agent/config.yml"
@@ -116,6 +131,26 @@ class ConfigTests(unittest.TestCase):
         self.config.chmod(0o644)
         with self.assertRaises(ValueError):
             tool.sync(self.defaults, self.config)
+
+    def test_rejects_foreign_owned_runtime_ancestor(self):
+        real_stat = Path.stat
+        def foreign_stat(path, *args, **kwargs):
+            info = real_stat(path, *args, **kwargs)
+            if path == self.root:
+                fields = list(info)
+                fields[4] = os.getuid() + 1
+                return os.stat_result(fields)
+            return info
+        with patch.object(Path, "stat", foreign_stat):
+            with self.assertRaisesRegex(ValueError, "Untrusted runtime directory"):
+                tool.sync(self.defaults, self.config)
+        self.assertFalse(self.config.parent.exists())
+
+    def test_rejects_writable_runtime_ancestor(self):
+        self.root.chmod(0o770)
+        with self.assertRaisesRegex(ValueError, "Runtime ancestors writable by others"):
+            tool.sync(self.defaults, self.config)
+        self.assertFalse(self.config.parent.exists())
 
     def test_rejects_symlinked_directory_and_metadata(self):
         real = self.root / "real"

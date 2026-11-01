@@ -25,10 +25,22 @@ class MemoryTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name).resolve()
+        # Model trusted host ancestry outside this fixture, not Nix sandbox
+        # ownership. Keep all state/config ownership and modes inside it real.
+        outside = set(self.root.parents)
+        real_stat = Path.stat
+        def fixture_stat(path, *args, **kwargs):
+            info = real_stat(path, *args, **kwargs)
+            if path in outside:
+                fields = list(info)
+                fields[0], fields[4] = stat.S_IFDIR | 0o755, 0
+                return os.stat_result(fields)
+            return info
+        ancestry = patch.object(Path, "stat", fixture_stat)
+        ancestry.start()
+        self.addCleanup(ancestry.stop)
+        self.addCleanup(self.tmp.cleanup)
         self.state = memory.private_directory(str(self.root / "state"))
-
-    def tearDown(self):
-        self.tmp.cleanup()
 
     def claim(self):
         return {"project": "example", "claim": "Journal optimisation failed its promotion gate",
@@ -78,6 +90,24 @@ class MemoryTests(unittest.TestCase):
             args[field] = value
             with self.assertRaises(ValueError):
                 memory.validate_claim(args)
+
+    def test_state_rejects_foreign_owned_ancestor(self):
+        real_stat = Path.stat
+        def foreign_stat(path, *args, **kwargs):
+            info = real_stat(path, *args, **kwargs)
+            if path == self.root:
+                fields = list(info)
+                fields[4] = os.getuid() + 1
+                return os.stat_result(fields)
+            return info
+        with patch.object(Path, "stat", foreign_stat):
+            with self.assertRaisesRegex(ValueError, "Untrusted state/config directory"):
+                memory.private_directory(str(self.state))
+
+    def test_state_rejects_writable_ancestor(self):
+        self.root.chmod(0o770)
+        with self.assertRaisesRegex(ValueError, "ancestors must not be writable by others"):
+            memory.private_directory(str(self.state))
 
     def test_record_does_not_trigger_user_round_pipeline(self):
         client = memory.Memory(self.state, 8420)
