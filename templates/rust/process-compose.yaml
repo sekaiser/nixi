@@ -1,0 +1,6 @@
+version: "0.5"
+
+processes:
+  example:
+    command: "sleep 3600"
+    disabled: true

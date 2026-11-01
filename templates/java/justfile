@@ -1,0 +1,21 @@
+set dotenv-load := true
+
+default:
+    @just --list
+
+fmt:
+    mvn -q checkstyle:check
+
+check:
+    mvn verify
+
+test:
+    mvn test
+
+ci: check
+
+services:
+    hey project up
+
+services-down:
+    hey project down

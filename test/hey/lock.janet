@@ -1,0 +1,21 @@
+(use judge)
+(use hey)
+(import hey/lock)
+
+(deftest scoped-locks
+  (def root (path :runtime "lock-unit"))
+  (path/mkdirp root)
+  (def file (path/join root "lock"))
+  (defer (os/rmdir root)
+    (test (os/with-lock file :first) :first)
+    (test (os/stat file :mode) nil)
+    (test (os/with-lock file :second) :second)
+    (test (first (protect (os/with-lock file (error "failure")))) false)
+    (test (os/stat file :mode) nil)
+    (def release (lock/acquire file))
+    (defer (release)
+      (test (first (protect (lock/acquire file 0))) false))
+    (test (os/stat file :mode) nil)
+    (with-dyns [*dryrun* true]
+      (test (os/with-lock file :dry-run) :dry-run)
+      (test (os/stat file :mode) nil))))

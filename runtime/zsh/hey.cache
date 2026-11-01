@@ -1,0 +1,13 @@
+#!/usr/bin/env zsh
+
+# Compatibility entrypoint for small shell initialization generators. Do not
+# persist executable output: old cache files (including .zwc siblings) are never
+# read, rewritten or removed. Arguments and executable upgrades take effect now.
+emulate -L zsh
+setopt no_aliases
+(( $# )) || return 1
+local nixi_generated_init
+nixi_generated_init=$("$@") || return $?
+if [[ -o interactive ]]; then
+  eval "$nixi_generated_init"
+fi

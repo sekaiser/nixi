@@ -1,0 +1,294 @@
+#compdef _hey hey
+
+typeset -g __HEY_MANIFEST_CACHE_STAMP=""
+typeset -ga __HEY_MANIFEST_COMMAND_ENTRIES_CACHE
+typeset -gA __HEY_MANIFEST_SUBCOMMAND_ENTRIES_CACHE
+
+function __hey_commands_manifest {
+  local file="${XDG_DATA_HOME:-$HOME/.local/share}/hey/commands.json"
+  [[ -r "$file" ]] || return 1
+  reply=("$file")
+}
+
+function __hey_refresh_manifest_cache {
+  local manifest stamp
+  local -A stat
+  local -a entries
+
+  __hey_commands_manifest || return 1
+  manifest="$reply[1]"
+  zmodload zsh/stat 2>/dev/null || return 1
+  zstat -H stat -- "$manifest" || return 1
+  stamp="${stat[device]}:${stat[inode]}:${stat[size]}"
+
+  if [[ "$stamp" != "$__HEY_MANIFEST_CACHE_STAMP" ]]; then
+    entries=("${(@f)$(jq -r '
+      to_entries[]
+      | . as $command
+      | ([.key] + (.value.aliases // []))[]
+      | "\(.):\"\($command.value.description | gsub("\""; "\\\""))\""
+    ' "$manifest")}") || return 1
+
+    __HEY_MANIFEST_CACHE_STAMP="$stamp"
+    __HEY_MANIFEST_COMMAND_ENTRIES_CACHE=("${entries[@]}")
+    __HEY_MANIFEST_SUBCOMMAND_ENTRIES_CACHE=()
+  fi
+
+  reply=("$manifest")
+}
+
+function __hey_manifest_command_entries {
+  __hey_refresh_manifest_cache || return 1
+  reply=("${__HEY_MANIFEST_COMMAND_ENTRIES_CACHE[@]}")
+}
+
+function __hey_manifest_subcommand_entries {
+  local manifest command
+  command="$1"
+  __hey_refresh_manifest_cache || return 1
+  manifest="$reply[1]"
+
+  if (( ! ${+__HEY_MANIFEST_SUBCOMMAND_ENTRIES_CACHE[$command]} )); then
+    __HEY_MANIFEST_SUBCOMMAND_ENTRIES_CACHE[$command]="$(jq -r --arg command "$command" '
+      (.[$command].subcommands // {})
+      | to_entries[]
+      | "\(.key):\"\(.value.description | gsub("\""; "\\\""))\""
+    ' "$manifest")" || return 1
+  fi
+
+  reply=("${(@f)__HEY_MANIFEST_SUBCOMMAND_ENTRIES_CACHE[$command]}")
+}
+
+function __hey_complete_manifest_subcommands {
+  local command="$1"
+  shift
+  local -a entries
+  __hey_manifest_subcommand_entries "$command" || return 1
+  entries=("${reply[@]}")
+  (( $#entries )) || return 1
+  _arguments -C "$@" "1:command:(($entries))"
+}
+
+function __list_commands_fallback {
+  local -aU subcmds
+  local dir help command
+  dir="$1"
+  # the parens after the glob contains "glob qualifiers" (see man zshexpn):
+  # * executable
+  # - follow symlinks
+  # , "or" separator
+  # / directories
+  for file in "$dir"/*(-*,/); do
+    command=${file:A:t:r}
+
+    if [[ $file == _* || ! -x $file ]]; then
+      continue
+    elif [[ -d $file ]]; then
+      [[ -n ${file:r}*(.xN[1]) ]] && continue
+      [[ -f $file/.docs ]] && help=$(head -n1 $file/.docs)
+    else
+      help=$(head -n+2 $file | tail -n-1 | sed -e 's/^# //')
+    fi
+
+    subcmds+=("$command:\"$help\"")
+  done
+
+  print -r -- "${(@F)subcmds}"
+}
+
+function __list_commands {
+  local -aU subcmds
+  local line dir next
+  dir="$1"
+  __hey_manifest_command_entries
+  subcmds=("${reply[@]}")
+  if (( $#subcmds == 0 )); then
+    subcmds=("${(@f)$(__list_commands_fallback "$dir")}")
+  fi
+
+  _arguments -C ": :(($subcmds))" "*::arg:->args"
+
+  case "$words[1]" in
+    check) __hey_check ;;
+    clean) __hey_clean ;;
+    dev) __hey_dev ;;
+    doctor) __hey_doctor ;;
+    direnv) __hey_direnv ;;
+    eks) __hey_eks ;;
+    host) __hey_host ;;
+    image) __hey_image ;;
+    project) __hey_project ;;
+    reload) __hey_reload ;;
+    security) __hey_complete_manifest_subcommands security '--json[Emit scanner JSON]' ;;
+    ssh) __hey_ssh ;;
+    sync) __hey_sync ;;
+    swap) __hey_swap ;;
+    template) __hey_template ;;
+    tmux) __hey_tmux ;;
+    utm) __hey_utm ;;
+    watch) __hey_watch ;;
+  esac
+
+
+  next="$dir/${line[1]}"
+  if [[ ! -z $line[1] && -d "$next" ]]; then
+    __list_commands "$next"
+  elif [[ ! -z $line[1] && -x "$next" ]]; then
+    # You could imagine wanting to customize the '*:file:_files' fallback
+    # at some point, but I'm not going to worry about that for now.
+    _arguments -A '-*' \
+      '--help[print help text]' \
+      '--cat[print script contents]' \
+      '--which[print script path]' \
+      '--edit[open script for editing]' \
+      '--really[suppress special argument handling]' \
+      '*:file:_files'
+  elif [[ ! -z $line[1] && ! -f "$next" ]]; then
+    _arguments "--new[create a new script]"
+  fi
+}
+
+function __hey_sync {
+  if [[ $words[2] == -- ]]; then
+    _nixos-rebuild $@
+  else
+    _arguments -C \
+      '--fast[Rebuild the system config quickly]' \
+      '--explain[Print the inferred rebuild plan]' \
+      '--flake[Target flake, optionally including #HOST]:flake:' \
+      '--host[Target host from selected flake]:host:' \
+      '(-t --theme)'{-t,--theme}'[Override the enabled theme]' \
+      '(-p --profile)'{-p,--profile}'[Target a specific nixos profile]' \
+      '1:command:(plan build switch check rollback)' \
+      "*::arg:->args"
+  fi
+}
+
+function __hey_reload {
+  _alternative \
+    'args:targets:((all\:"Reload all supported runtime config" tmux\:"Reload tmux" zsh\:"Reload zsh" direnv\:"Reload direnv" k9s\:"Remove k9s cache state" cache\:"Remove hey cache state"))'
+}
+
+function __hey_check {
+  _arguments -C \
+    '--flake[Target host flake]:flake:' \
+    '1:command:((unit\:"Run Janet unit tests" cli\:"Run generic hey CLI checks" utm-cli\:"Run UTM CLI checks" flake\:"Build flake checks" eval\:"Evaluate system derivations" build\:"Build a host closure" image\:"Build a host image" all\:"Run the standard local validation suite"))' \
+    '*::arg:_files'
+}
+
+function __hey_clean {
+  _alternative \
+    'args:targets:((all\:"All supported local caches" zsh\:"zsh and zgenom caches" nix\:"hey Nix scratch state" k9s\:"k9s cache state" cache\:"hey cache state"))'
+}
+
+function __hey_doctor {
+  if [[ $words[2] == fix || $words[3] == fix ]]; then
+    _alternative \
+      'args:targets:((zsh-cache\:"Clear zsh and completion caches" tmux-env\:"Refresh tmux DOTFILES environment and reload config" stale-store-paths\:"Run hey sync to refresh generated store paths"))'
+  else
+    _arguments -C \
+      '--quiet[Only print warnings, errors, and final status]' \
+      '--verbose[Print successful checks and detail lines]' \
+      '--profile[With shell, measure interactive zsh startup time]' \
+      '1:command:((agents\:"Check agent configuration and process state" env\:"Check local environment assumptions" fix\:"Run an explicit remediation" nix\:"Check Nix daemon and process state" secrets\:"Check inline secret markers without printing values" shell\:"Check shell runtime dependencies" sync\:"Check rebuild assumptions" zed\:"Check managed Zed settings and extensions"))' \
+      '*::arg:->args'
+  fi
+}
+
+function __hey_dev {
+  __hey_complete_manifest_subcommands dev \
+    '--yes[Allow destructive clean]'
+}
+
+function __hey_project {
+  __hey_complete_manifest_subcommands project \
+    '--yes[Allow destructive clean]'
+}
+
+function __hey_eks {
+  if [[ $words[2] == vpn ]]; then
+    _alternative \
+      'args:commands:((status\:"Show VPN state" start\:"Start VPN" restart\:"Restart VPN" logs\:"Show VPN logs"))'
+  else
+    _arguments -C \
+      '--bastion[Run the command through a bastion VM]:vm:' \
+      '--user[SSH user for bastion access]:user:' \
+      '1:command:((list\:"List configured clusters" login\:"Login to AWS SSO/SAML" kubeconfig\:"Refresh kubeconfig" use\:"Select kubectl context" open\:"Open k9s" logs\:"Stream logs" port-forward\:"Forward a local port to a Kubernetes resource" shell\:"Open remote shell" status\:"Show cluster status" credentials\:"Show credential command" env\:"Print environment exports" vpn\:"Manage VPN" doctor\:"Check EKS tooling and cluster metadata"))' \
+      '*::arg:_files'
+  fi
+}
+
+function __hey_swap {
+  _arguments '(-l --list)'{-l,--list}'[List legacy swapped files (read-only)]'
+}
+
+function __hey_ssh {
+  __hey_complete_manifest_subcommands ssh \
+    '--quiet[Only print warnings and errors]' \
+    '--verbose[Print successful checks too]'
+}
+
+function __hey_tmux {
+  __hey_complete_manifest_subcommands tmux
+}
+
+function __hey_template {
+  _arguments -C \
+    '1:command:((list\:"List available templates" init\:"Copy a template into an empty directory"))' \
+    '2:template:((editorconfig go java practice rust))' \
+    '*::directory:_files -/'
+}
+
+function __hey_host {
+  _arguments -C \
+    '--flake[Target host flake]:flake:' \
+    '--storage[Opt into host doctor storage-policy checks]' \
+    '1:command:((doctor\:"Check evaluated host metadata" explain\:"Explain an evaluated host build target" list\:"List flake hosts grouped by platform"))' \
+    '*::arg:_files'
+}
+
+function __hey_direnv {
+  __hey_complete_manifest_subcommands direnv
+}
+
+function __hey_image {
+  _arguments -C \
+    '--flake[Target host flake]:flake:' \
+    '1:command:((list\:"List image outputs for a host" build\:"Build a host image"))' \
+    '*::arg:_files'
+}
+
+function __hey_profile {
+  _arguments -C \
+    '(-u --user)'{-u,--user}'[Operate on the user profile]' \
+    '--keep-generations[With prune, retain N entries including the active generation]:count:' \
+    '1:command:((ls\:"List generations" current\:"Print active generation" previous\:"Print previous generation" rollback\:"Activate a generation" rm\:"Remove explicit generations" prune\:"Keep N entries without GC" diff\:"Compare generation references"))' \
+    '*::generation:'
+}
+
+function __hey_utm {
+  _arguments -C \
+    '--vm[VM name]:vm:' \
+    '--flake[Flake host reference]:flake:' \
+    '--user[SSH user]:user:' \
+    '--wait[Seconds for SSH readiness; ip uses at most 30s]:seconds:' \
+    '--scan[With ip, allow a bounded local /24 ping sweep]' \
+    '--mode[Activation mode]:mode:((switch test boot))' \
+    '--cpu[CPU count]:count:' \
+    '--ram[Memory in MiB]:mib:' \
+    '--phases[Comma-separated create-image phases]:phases:((start doctor start,doctor))' \
+    '--keep-generations[Generations to keep]:count:' \
+    '--force[Overwrite an existing VM image]' \
+    '--yes[Skip confirmation prompts]' \
+    '1:command:((ls\:"List registered VMs" status\:"Show VM status" start\:"Start a VM" stop\:"Stop a VM" create-image\:"Build and register a VM image" update\:"Deploy a host closure to a VM" rollback\:"Rollback the remote system profile" generations\:"List remote system generations" cleanup-generations\:"Delete old remote generations" diff\:"Diff remote system closures" ssh\:"Open SSH or run a command" current\:"Show the remote current system" check\:"Run current and doctor checks" doctor\:"Check VM readiness and activation prerequisites" ip\:"Print VM IP address" token\:"Print k3s node token"))' \
+    '*::arg:_files'
+}
+
+function __hey_watch {
+  _arguments -C \
+    '--flake[Target host flake]:flake:' \
+    '1:command:((eval\:"Re-run host evaluation checks" cli\:"Re-run generic hey CLI checks" flake\:"Re-run flake and checked package checks" tmux\:"Re-run tmux doctor" utm-cli\:"Re-run UTM CLI checks" run\:"Run a custom command under watchexec"))' \
+    '*::arg:_files'
+}
+
+__list_commands ${DOTFILES_BIN}/hey.d

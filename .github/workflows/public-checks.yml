@@ -1,0 +1,54 @@
+name: Public snapshot checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      sanitized_staging:
+        description: Confirm this repository contains only the reviewed export, never private inventory
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    # Only a reviewed export: public automatically, private staging explicitly.
+    # Never use pull_request_target or private caches/secrets here.
+    if: github.event.repository.private == false || (github.event_name == 'workflow_dispatch' && inputs.sanitized_staging)
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        runner: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify public layout and export
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f release-files.json
+          test ! -d hosts
+          python3 tools/release.py export --destination "$RUNNER_TEMP/public-candidate"
+      - uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
+      - name: Evaluate and test only the exported snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/public-candidate"
+          nix flake check --no-build --no-write-lock-file
+          system="$(nix eval --impure --raw --expr builtins.currentSystem)"
+          # Validate coverage before any builds. New/unclassified checks fail;
+          # platform availability comes from Nix, not another platform list.
+          nix eval --json --no-write-lock-file ".#checks.$system" --apply builtins.attrNames > "$RUNNER_TEMP/available-checks.json"
+          python3 test_tools/check_plan.py "$RUNNER_TEMP/available-checks.json" > "$RUNNER_TEMP/native-checks.txt"
+          while IFS= read -r check; do
+            nix build --no-link --no-write-lock-file --max-jobs 1 ".#checks.$system.$check"
+          done < "$RUNNER_TEMP/native-checks.txt"

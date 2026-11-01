@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "overrides": {
+    "openssl_3_6": {
+      "fixedVersion": "3.6.4",
+      "source": {
+        "url": "https://github.com/openssl/openssl/releases/download/openssl-3.6.4/openssl-3.6.4.tar.gz",
+        "sha256": "9bffaa1ad1e07b354c21bd3324ec02fa15579f45a7d0494b3e74bc449b7333ef"
+      },
+      "advisories": [
+        "https://openssl-library.org/news/openssl-3.6-notes/",
+        "https://openssl-library.org/news/secadv/20260825.txt"
+      ],
+      "reviewed": "2026-09-10",
+      "reviewBy": "2026-10-10",
+      "reason": "The reviewed package snapshots include an older OpenSSL 3.6 release. Temporarily apply the upstream security release across the affected package sets.",
+      "removeWhen": "All supported default Nixpkgs snapshots supply the applicable fixes without this override; verify base and unstable package sets on Linux and Darwin, then remove the override and its record.",
+      "validation": [
+        "checks/package-context.nix",
+        "Native Linux and Darwin builds and consumer rollout remain required; evaluation alone is not deployment verification."
+      ]
+    }
+  }
+}

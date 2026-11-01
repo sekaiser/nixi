@@ -1,0 +1,33 @@
+hotKey:
+  shift-p:
+    shortCut: Shift-P
+    description: Pods
+    command: pods
+  shift-d:
+    shortCut: Shift-D
+    description: Deployments
+    command: deployments
+  shift-s:
+    shortCut: Shift-S
+    description: Services
+    command: services
+  shift-i:
+    shortCut: Shift-I
+    description: Ingresses
+    command: ingress
+  shift-e:
+    shortCut: Shift-E
+    description: Events
+    command: events
+  shift-n:
+    shortCut: Shift-N
+    description: Nodes
+    command: nodes
+  shift-x:
+    shortCut: Shift-X
+    description: Contexts
+    command: ctx
+  shift-a:
+    shortCut: Shift-A
+    description: Namespaces
+    command: namespaces

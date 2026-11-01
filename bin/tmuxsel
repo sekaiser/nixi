@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Optional interactive session selector, distributed separately from Hey.
+
+# Does not let you press Ctrl-C
+function ctrl_c() {
+    echo -e "\renter nil to drop to normal prompt"
+}
+
+trap ctrl_c SIGINT
+
+tmux_bin=$(command -v tmux)
+server_pid=$(tmux display-message -p '#{pid}' 2>/dev/null)
+if [[ -n $server_pid ]] && command -v lsof >/dev/null; then
+  server_bin=$(lsof -p "$server_pid" 2>/dev/null | awk '$4 == "txt" && $NF ~ /\/tmux$/ { print $NF; exit }')
+  [[ -n $server_bin ]] && tmux_bin=$server_bin
+fi
+
+if [[ -n $(pgrep tmux) ]]; then
+  no_of_terminals=$("$tmux_bin" list-sessions | wc -l)
+  IFS=$'\n'
+  output=($("$tmux_bin" list-sessions))
+  output_names=($("$tmux_bin" list-sessions -F\#S))
+fi
+
+k=1
+echo "Choose the terminal to attach: "
+for i in "${output[@]}"; do
+  echo "$k - $i"
+  ((k++))
+done
+echo
+echo "Create a new session by entering a name for it"
+read -r input
+if [[ $input == "" ]]; then
+  "$tmux_bin" new-session
+  exit $?
+elif [[ $input == 'nil' ]]; then
+  exit 1
+elif [[ $input =~ ^[0-9]+$ ]] && [[ $input -le $no_of_terminals ]]; then
+  terminal_name="${output_names[input - 1]}"
+  "$tmux_bin" attach -t "$terminal_name"
+  exit $?
+else
+  "$tmux_bin" new-session -s "$input"
+  exit $?
+fi
+
+exit 0

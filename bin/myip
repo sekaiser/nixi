@@ -1,0 +1,5 @@
+#!/bin/sh
+# Compatibility entrypoint; Hey owns local/WAN IP discovery.
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+exec "$script_dir/hey" info -r ip "$@"

@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+framework_dir=$(dirname -- "$script_dir")
+export HEY_FRAMEWORK_ROOT="$framework_dir"
+
+# Janet treats the final JANET_PATH entry as its high-priority system path.
+# Keep inherited dependency directories as search entries, with our runtime
+# last so both direct and nested invocations use this checkout's Hey modules.
+export JANET_PATH="$framework_dir/vendor/janet${JANET_PATH:+:$JANET_PATH}:$framework_dir/runtime"
+
+export DOTFILES_BIN="${DOTFILES_BIN:-$script_dir}"
+
+exec janet -m "$framework_dir/runtime" "$script_dir/hey.janet" "$@"

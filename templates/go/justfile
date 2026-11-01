@@ -1,0 +1,26 @@
+set dotenv-load := true
+
+default:
+    @just --list
+
+fmt:
+    gofmt -w .
+
+check:
+    go test ./...
+    golangci-lint run
+    govulncheck ./...
+
+test:
+    gotestsum --format testname -- ./...
+
+ci: check
+
+watch:
+    air
+
+services:
+    hey project up
+
+services-down:
+    hey project down

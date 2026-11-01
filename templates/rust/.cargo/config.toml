@@ -1,0 +1,7 @@
+[alias]
+ci = "nextest run"
+cov = "llvm-cov nextest"
+lint = "clippy --all-targets --all-features -- -D warnings"
+
+[build]
+rustflags = ["-Dwarnings"]

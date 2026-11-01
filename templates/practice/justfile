@@ -1,0 +1,45 @@
+set dotenv-load := true
+
+default:
+    @just --list
+
+fmt: fmt-rust fmt-go fmt-java
+
+fmt-rust:
+    cd rust && cargo fmt
+
+fmt-go:
+    cd go && gofmt -w .
+
+fmt-java:
+    find java/src -name '*.java' -print0 | xargs -0 google-java-format -i
+
+check: test
+
+test: test-rust test-go test-java
+
+test-rust:
+    cd rust && cargo test
+
+test-go:
+    cd go && gotestsum --format testname -- ./...
+
+test-java:
+    cd java && mvn test
+
+ci: test
+
+watch-rust:
+    cd rust && bacon
+
+watch-go:
+    cd go && watchexec --restart -- go test ./...
+
+watch-java:
+    cd java && watchexec --restart -- mvn test
+
+services:
+    hey project up
+
+services-down:
+    hey project down
