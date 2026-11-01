@@ -192,12 +192,14 @@
     && moved.env.CODEX_HOME == "/custom/alice/.codex"
     && moved.modules.agents.omp.stateDir == "/custom/alice/.omp"
     && moved.hey.capabilities.agents.omp.files."omp config file exists" == "/custom/alice/.omp/agent/config.yml"
-    && moved.home-manager.users.alice.home.file.".omp/agent/config.yml".target == ".omp/agent/config.yml"
+    && !(moved.home-manager.users.alice.home.file ? ".omp/agent/config.yml")
+    && lib.hasInfix "/custom/alice/.omp/agent/config.yml" moved.home-manager.users.alice.home.activation.syncOmpConfig.data
     && moved.modules.services.ssh.userCertificates.fixture.publicKeyFile == "/custom/alice/.ssh/id_ed25519.pub"
     && moved.modules.services.ssh.userCertificates.fixture.certificateFile == "/custom/alice/.ssh/id_ed25519-cert.pub"
     && customPaths.modules.agents.codex.codexHome == "/custom/codex"
     && customPaths.modules.agents.omp.stateDir == "/custom/omp"
     && customPaths.hey.capabilities.agents.omp.files."omp config file exists" == "/custom/alice/.config/omp/custom.yml"
+    && lib.hasInfix "/custom/alice/.config/omp/custom.yml" customPaths.home-manager.users.alice.home.activation.syncOmpConfig.data
     && customPaths.modules.services.ssh.userCertificates.fixture.publicKeyFile == "/custom/key.pub"
     && customPaths.modules.services.ssh.userCertificates.fixture.certificateFile == "/custom/key-cert.pub"
     && forcedBin.home.binDir == "/forced/bin"

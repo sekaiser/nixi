@@ -688,7 +688,7 @@
     },
     {
       "path": "checks/home-manager-integration.nix",
-      "sha256": "7666e390c70b5cd85c82684c12ed4c72716300da404cd13aaa76f7eb5a56f4a1",
+      "sha256": "b7e5d8cbf32b0c2cefe25cfb4dd39d32cdc7b6e61f5f656e5e16d81ce8d767fc",
       "executable": false
     },
     {
