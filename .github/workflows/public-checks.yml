@@ -20,7 +20,8 @@ jobs:
     if: github.event.repository.private == false || (github.event_name == 'workflow_dispatch' && inputs.sanitized_staging)
     strategy:
       fail-fast: false
-      max-parallel: 1
+      # Matrix entries use separate runners; keep each runner's native builds serial.
+      max-parallel: 2
       matrix:
         runner: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.runner }}

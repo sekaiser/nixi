@@ -21,8 +21,8 @@ ssh_policy_dns=
 ssh_policy_password=
 while read -r key value remainder; do
   case "$key" in
-    usedns) ssh_policy_dns=$value ;;
-    passwordauthentication) ssh_policy_password=$value ;;
+    usedns|UseDNS) ssh_policy_dns=$value ;;
+    passwordauthentication|PasswordAuthentication) ssh_policy_password=$value ;;
   esac
 done <<EOF
 $ssh_policy_config

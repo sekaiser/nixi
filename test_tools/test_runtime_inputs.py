@@ -96,10 +96,25 @@ class SSHPolicy(unittest.TestCase):
             "/run/current-system/sw/bin/sshd", self.sshd).replace(
             "/etc/ssh/sshd_config", str(self.config)).replace("$(id -un)", "alice")
 
-    def probe(self, connection="192.0.2.10 54321 192.0.2.20 22"):
-        return subprocess.run(["sh", "-c", self.script],
+    def probe(self, connection="192.0.2.10 54321 192.0.2.20 22", *, script=None):
+        return subprocess.run(["sh", "-c", self.script if script is None else script],
                               env=os.environ | {"SSH_CONNECTION": connection},
                               capture_output=True, text=True, timeout=5)
+
+    def test_keyword_formats_keep_values_fail_closed(self):
+        fake = self.root / "sshd-fixture"
+        script = self.script.replace(self.sshd, str(fake))
+        for dns, password in (("usedns", "passwordauthentication"),
+                              ("UseDNS", "PasswordAuthentication")):
+            for dns_value, password_value, valid in (("no", "no", True), ("no", "yes", True),
+                                                     ("yes", "no", False), ("no", "unknown", False)):
+                with self.subTest(dns=dns, dns_value=dns_value, password_value=password_value):
+                    output = f"{dns} {dns_value}\n{password} {password_value}\n"
+                    fake.write_text(f"#!{sys.executable}\nprint({output!r})\n")
+                    fake.chmod(0o700)
+                    result = self.probe(script=script)
+                    self.assertEqual(result.returncode == 0, valid, result.stderr)
+                    self.assertEqual(result.stdout, password_value + "\n" if valid else "")
 
     def test_global_match_and_include_policy_without_private_keys(self):
         included = self.root / "included.conf"

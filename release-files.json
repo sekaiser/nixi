@@ -243,12 +243,12 @@
     },
     {
       "path": "runtime/hey/ssh-policy.sh",
-      "sha256": "28caed010ae1c2ddc391df7a0bc0380331e431c01ea172fec4c53f2ddb855975",
+      "sha256": "e1ea2d7a857bdb39c6227ef0952e3b9fd4860e73f5f9eaa71fb37ceac31439da",
       "executable": false
     },
     {
       "path": "test_tools/test_runtime_inputs.py",
-      "sha256": "40ed26307839d253e884b92f3785d437e943f57246fd9d8588e6768f7bb84680",
+      "sha256": "4113a5f12daae2d957e4608bc77ceac1793d23327a902b0f5c858eb776856acc",
       "executable": false
     },
     {
@@ -413,7 +413,7 @@
     },
     {
       "path": ".github/workflows/public-checks.yml",
-      "sha256": "d4df949d4f647396970b72fed08cbe0c20d87684d329cc69e43290b2c6276016",
+      "sha256": "341fc259af8ed05fbbd12d4ff5c16907e750b71a853c049ff39af7151ff94b18",
       "executable": false
     },
     {
@@ -663,7 +663,7 @@
     },
     {
       "path": "checks/ssh-certificate-lifecycle.nix",
-      "sha256": "4d9df1115cb3a3e6590a156926cb5debbf3fe08c9eece3159c632bfc61042a30",
+      "sha256": "8200d22a6a90c19b328cb58c98d2459a93cb4671399f5e51de99d996a3e43f80",
       "executable": false
     },
     {

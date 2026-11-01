@@ -309,6 +309,11 @@ in
       data = json.load(open(sys.argv[1]))
       def run(args):
           return subprocess.run(args, capture_output=True, text=True, timeout=10, check=True)
+      def config_lines(output):
+          # OpenSSH versions differ in keyword capitalization. Keep path/value
+          # spelling unchanged, including spaces, quotes and literal percent.
+          return {key.lower() + separator + value for line in output.splitlines()
+                  for key, separator, value in [line.partition(" ")]}
       with tempfile.TemporaryDirectory() as directory:
           root = Path(directory)
           run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(root / "ca")])
@@ -320,14 +325,14 @@ in
           server = root / "sshd_config"
           server.write_text(data["hostParserConfig"].replace("/fixture/", directory + "/"))
           parsed = run(["sshd", "-T", "-f", str(server), "-h", str(root / "key")]).stdout
-          assert "hostcertificate " + certificate in parsed.splitlines(), parsed
+          assert "hostcertificate " + certificate in config_lines(parsed), parsed
           for content in data["clientParserConfigs"]:
               client = root / "ssh_config"
               client.write_text(content)
               parsed = run(["ssh", "-G", "-F", str(client), "fixture.example.invalid"]).stdout
               home = pwd.getpwuid(os.getuid()).pw_dir
               expected = "userknownhostsfile " + home + "/" + data["clientPath"] + " " + home + "/.ssh/known_hosts"
-              assert expected in parsed.splitlines(), parsed
+              assert expected in config_lines(parsed), parsed
       PY
       ${native.config.system.build.nixiUserCertificateRenewal} > optional.log 2>&1
       grep -q 'for second is unavailable' optional.log
