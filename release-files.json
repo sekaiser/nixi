@@ -513,7 +513,7 @@
     },
     {
       "path": "runtime/hey/eks/transport.janet",
-      "sha256": "42bc0dc3555b5d9f1bff07e91cc7bf39c184b1d98f01c5f3a8d69ddba4ba9573",
+      "sha256": "92072d30e8743e21e2fe9d5235c5ff0f36f6cf409afae20fd7b595cac3d03414",
       "executable": false
     },
     {
@@ -758,7 +758,7 @@
     },
     {
       "path": "test_tools/test_cli.py",
-      "sha256": "d87e301e55e8f5c73bafb4d0e8f168241b98ea30ef8e550de46543f7e94f365b",
+      "sha256": "fb83ab2d93a9a3e3424f3fc2b517e487ce374f34e2a4d83d2dd7eea8f56e3e48",
       "executable": false
     },
     {
@@ -1048,7 +1048,7 @@
     },
     {
       "path": "bin/hey.d/utm.janet",
-      "sha256": "3c3445d0d1f2ae146b0d25ab7db5ab50212252f0580f963dc23d253f237f9ff7",
+      "sha256": "2568a913703aa3a990afbccdf0b2fba62c6750b1fb484050401c12e8f081e14e",
       "executable": false
     },
     {

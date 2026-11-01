@@ -592,6 +592,7 @@ if name == "aws" and "get-caller-identity" in sys.argv:
             "name": "review", "profile": "work", "bastion": "fixture",
             "vpnService": "openvpn-fixture.service"}})
         self.mock_command("utmctl", 'print("198.51.100.2")\n')
+        self.mock_command("hey", 'raise AssertionError("nested call selected PATH hey")\n')
         log = self.root / "ssh-calls"
         self.mock_command("ssh", f'''import json, sys
 from pathlib import Path
@@ -1744,6 +1745,7 @@ from pathlib import Path
 if sys.argv[1:3] == ["utm", "ip"]: print("192.0.2.1")
 else: Path({str(log)!r}).write_text(json.dumps(sys.argv[1:]))
 ''')
+        self.mock_command("utmctl", 'print("192.0.2.1")\n')
         self.mock_command("ssh", '''import shlex, subprocess, sys
 idx = next(i for i, arg in enumerate(sys.argv) if "@192.0.2.1" in arg)
 remote = " ".join(sys.argv[idx + 1:])
@@ -3096,7 +3098,8 @@ else:
         current_file, next_info = self.root / "current-system", self.root / "next-info"
         current_file.write_text("/nix/store/fixture-nixos-system-review")
         self.env["HEY_NIX_USE_NOM"] = "0"
-        self.mock_command("hey", "print('192.0.2.1')\n")
+        self.mock_command("hey", 'raise AssertionError("nested call selected PATH hey")\n')
+        self.mock_command("utmctl", "print('192.0.2.1')\n")
         self.mock_command("nix", "print('/nix/store/fixture-nixos-system-review')\n")
         self.mock_command("ssh", f'''import json, sys
 from pathlib import Path
@@ -3212,10 +3215,10 @@ else: raise RuntimeError("Unexpected mock command: " + remote)
         known_hosts.with_suffix(".old").write_text("previous backup\n")
         log = self.root / "ssh-args.json"
         scripts = {
-            "hey": 'import sys\nassert sys.argv[1:3] == ["utm", "ip"]\nprint("192.0.2.1")\n',
+            "hey": 'raise AssertionError("nested call selected PATH hey")\n',
             "ssh": f'import json, sys\nfrom pathlib import Path\nPath({str(log)!r}).write_text(json.dumps(sys.argv[1:]))\nsys.exit(255)\n',
             "ssh-keygen": 'raise RuntimeError("must not modify known_hosts")\n',
-            "utmctl": 'import sys\nprint("UUID STATUS NAME\\nfixture-id started fixture" if sys.argv[1] == "list" else "started")\n',
+            "utmctl": 'import sys\nprint("UUID STATUS NAME\\nfixture-id started fixture" if sys.argv[1] == "list" else "192.0.2.1" if sys.argv[1] == "ip-address" else "started")\n',
             "ps": 'pass\n',
         }
         for name, script in scripts.items():

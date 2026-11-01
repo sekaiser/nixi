@@ -200,7 +200,7 @@
   (image/build-toplevel flake-ref host))
 
 (defn- utm/ip [vm]
-  (string/trim ($< hey utm ip ,vm)))
+  (string/trim ($< ,(path :bin "hey") utm ip ,vm)))
 
 (defn- remote-trim [ssh-opts conn cmd]
   (string/trim (ssh/slurp ssh-opts conn cmd)))

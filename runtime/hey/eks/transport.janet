@@ -56,7 +56,7 @@
       (abort "Usage: hey eks vpn status|start|restart|logs CLUSTER"))))
 
 (defn- bastion-ip [vm]
-  (string/trim ($< hey utm ip ,vm)))
+  (string/trim ($< ,(path :bin "hey") utm ip ,vm)))
 
 (defn- bastion-needs-vpn? [remote-args]
   (not (nil? (index-of (get remote-args 0)
