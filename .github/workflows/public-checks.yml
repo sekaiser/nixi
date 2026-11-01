@@ -50,5 +50,5 @@ jobs:
           nix eval --json --no-write-lock-file ".#checks.$system" --apply builtins.attrNames > "$RUNNER_TEMP/available-checks.json"
           python3 test_tools/check_plan.py "$RUNNER_TEMP/available-checks.json" > "$RUNNER_TEMP/native-checks.txt"
           while IFS= read -r check; do
-            nix build --no-link --no-write-lock-file --max-jobs 1 ".#checks.$system.$check"
+            nix build --print-build-logs --no-link --no-write-lock-file --max-jobs 1 ".#checks.$system.$check"
           done < "$RUNNER_TEMP/native-checks.txt"

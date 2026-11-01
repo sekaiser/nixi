@@ -58,6 +58,9 @@
                             "HEY_HOST=laptop" "HEY_USER=alice" "HEY_THEME=alucard"]
         data-home (string "" test-root "/hey-check-data")
         runtime-home (string "" test-root "/hey-check-runtime")
+        profile-state-home (string test-root "/hey-check-profile-state")
+        profile-env-prefix @["env" (string "XDG_STATE_HOME=" profile-state-home)
+                             (string "XDG_RUNTIME_DIR=" runtime-home)]
         secret-fixture (string "" test-root "/hey-check-secret-fixture")
         ssh-fixture-home (string "" test-root "/hey-check-ssh-home")
         capability-fixture-home (string "" test-root "/hey-check-capability-data")
@@ -204,12 +207,12 @@
           ["path file predicate" @[hey-bin "path" "-f" "bin" "hey"]]
           ["pull targeted dry-run" @[hey-bin "-!" "pull" "nixpkgs"]]
           ["pull override dry-run" @[hey-bin "-!" "pull" "-o" "nixpkgs=github:NixOS/nixpkgs"]]
-          ["profile ls" @["env" (string "XDG_RUNTIME_DIR=" runtime-home) hey-bin "profile" "ls"]]
-          ["profile user ls" @["env" (string "XDG_RUNTIME_DIR=" runtime-home) hey-bin "profile" "ls" "-u"]]
-          ["profile current" @["env" (string "XDG_RUNTIME_DIR=" runtime-home) hey-bin "profile" "current"]]
-          ["profile previous" @["env" (string "XDG_RUNTIME_DIR=" runtime-home) hey-bin "profile" "previous"]]
-          ["profile rollback dry-run" @["env" (string "XDG_RUNTIME_DIR=" runtime-home) hey-bin "-!" "profile" "rollback"]]
-          ["profile diff dry-run" @["env" (string "XDG_RUNTIME_DIR=" runtime-home) hey-bin "-!" "profile" "diff"]]
+          ["profile system path" @[hey-bin "profile"]]
+          ["profile user ls" @[;profile-env-prefix hey-bin "profile" "ls" "-u"]]
+          ["profile user current" @[;profile-env-prefix hey-bin "profile" "current" "-u"]]
+          ["profile user previous" @[;profile-env-prefix hey-bin "profile" "previous" "-u"]]
+          ["profile user rollback dry-run" @[;profile-env-prefix hey-bin "-!" "profile" "rollback" "-u"]]
+          ["profile user diff dry-run" @[;profile-env-prefix hey-bin "-!" "profile" "diff" "-u"]]
           ["asset command dispatch" @[hey-bin "which" "@tmux" "swap-pane" "left"]]]
         help-commands @[
           ["main help wording" @[hey-bin "-h"] "Build flake artifacts or recompile bin/hey" "Run local validation suites" "Display paths inside this flake and XDG areas" "Manage UTM-backed NixOS VMs"]
@@ -418,6 +421,11 @@
           ["ops removed" @[hey-bin "ops"] "Unknown command: \"ops\""]
           ["pull override rejects malformed input" @[hey-bin "-!" "pull" "-o" "bad"] "Malformed input spec: bad"]]]
     (var ok true)
+    # Never depend on or inspect a developer/CI host's real system generations.
+    # Both profile selection and previous-generation coverage use scratch data.
+    (each generation ["1" "2"]
+      (path/mkdirp (string profile-state-home "/nix/profiles/profile-" generation "-link")))
+    (os/link "profile-2-link" (string profile-state-home "/nix/profiles/profile") true)
     (path/mkdirp (string "" test-root "/hey-eks-check/hey"))
     (spit (string "" test-root "/hey-eks-check/hey/aws.json")
           "{\"awscli2\":{\"samlAccounts\":[\"remoteprofile\"],\"eksClusters\":{\"remote-dev\":{\"name\":\"remote-dev\",\"profile\":\"remoteprofile\",\"region\":\"eu-central-1\",\"kubeContext\":\"remoteprofile/remote-dev\",\"bastion\":\"eks-bastion\",\"vpnService\":\"openvpn-eks.service\"},\"local-dev\":{\"name\":\"local-dev\",\"profile\":\"localprofile\",\"region\":\"eu-west-1\",\"kubeContext\":\"localprofile/local-dev\",\"namespace\":\"app-ns\"}}}}")

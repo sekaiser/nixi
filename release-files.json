@@ -413,7 +413,7 @@
     },
     {
       "path": ".github/workflows/public-checks.yml",
-      "sha256": "a4595d5ea43827335927a64b6ae2dc099c13c715a1ce7c1d95faa932a6b6d12c",
+      "sha256": "d4df949d4f647396970b72fed08cbe0c20d87684d329cc69e43290b2c6276016",
       "executable": false
     },
     {
@@ -613,7 +613,7 @@
     },
     {
       "path": "test/cli/generic.janet",
-      "sha256": "71a386c458398d52d14813a9fa5413fa53d9b3e23cf10249d6d4dc1abba15170",
+      "sha256": "091a2058a664a753b80558d4efcfb3298e917fbcb49edc609cc430bd8de1bcad",
       "executable": false
     },
     {
