@@ -54,9 +54,12 @@
   (when (and timeout (not (and (number? timeout) (> timeout 0) (< timeout math/inf))))
     (error "Capture timeout must be a finite positive number"))
   (def helper (or (os/getenv "HEY_PROCESS_SUPERVISOR") "nixi-process-supervisor"))
+  # Inherit OS stderr directly. Passing the Janet file as :err creates an extra
+  # duplicated event stream not owned by proc-close (and breaks Linux epoll on
+  # descriptor reuse after collection). Only our two protocol pipes are owned.
   (with [proc (os/spawn [helper "--limit" (string output-limit) "--timeout" (string (or timeout 0))
                         ;(if inherit-stderr? ["--inherit-stderr"] []) "--" ;args]
-                       :p {:in :pipe :out :pipe :err stderr})]
+                       :p {:in :pipe :out :pipe})]
     (var done false)
     (var cancelling false)
     (defn cleanup [&]

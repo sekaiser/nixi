@@ -50,6 +50,9 @@ jobs:
           # platform availability comes from Nix, not another platform list.
           nix eval --json --no-write-lock-file ".#checks.$system" --apply builtins.attrNames > "$RUNNER_TEMP/available-checks.json"
           python3 test_tools/check_plan.py "$RUNNER_TEMP/available-checks.json" > "$RUNNER_TEMP/native-checks.txt"
+          check_targets=()
           while IFS= read -r check; do
-            nix build --print-build-logs --no-link --no-write-lock-file --max-jobs 1 ".#checks.$system.$check"
+            check_targets+=(".#checks.$system.$check")
           done < "$RUNNER_TEMP/native-checks.txt"
+          # Evaluate the selected set once, retaining serial builds per runner.
+          nix build --keep-going --print-build-logs --no-link --no-write-lock-file --max-jobs 1 "${check_targets[@]}"

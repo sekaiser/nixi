@@ -266,13 +266,19 @@ os._exit(0)
     def test_janet_repeated_captures_under_low_fd_limit(self):
         env = os.environ | {"JANET_PATH": str(ROOT / "runtime") + os.pathsep + os.environ["JANET_PATH"]}
         source = f'''(import hey/subprocess)
-(repeat 20 (assert (= 0 ((subprocess/capture [{json.dumps(sys.executable)} "-c" "pass"] 1) :status))))
+(repeat 100
+  (assert (= 0 ((subprocess/capture [{json.dumps(sys.executable)} "-c"
+    "import sys; sys.stderr.write('fixture-stderr|')"] 1 65536 true) :status)))
+  # Force descriptor reuse; do not depend on platform GC timing in this fixture.
+  (gccollect))
+(file/write stderr "parent-stderr-alive\\n")
 '''
         # Apply the limit in a separate harness process, not this test runner.
         launcher = "import os,resource,sys; soft,hard=resource.getrlimit(resource.RLIMIT_NOFILE); resource.setrlimit(resource.RLIMIT_NOFILE,(min(soft,64),hard)); os.execvp('janet',['janet','-e',sys.argv[1]])"
         result = subprocess.run([sys.executable, "-c", launcher, source], env=env,
-                                capture_output=True, text=True, timeout=8)
+                                capture_output=True, text=True, timeout=45)
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "fixture-stderr|" * 100 + "parent-stderr-alive\n")
 
 
 if __name__ == "__main__":

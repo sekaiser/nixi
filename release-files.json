@@ -313,7 +313,7 @@
     },
     {
       "path": "test_tools/test_process_supervisor.py",
-      "sha256": "d5da80119298c590a497dfbb29e0af0c79cfa92feb1402c2f51bdd530821f85d",
+      "sha256": "217f52e33611fb1a29ef758e224d2642c9c28785d13d1f844ef9803e15d1e54b",
       "executable": false
     },
     {
@@ -383,7 +383,7 @@
     },
     {
       "path": "runtime/hey/subprocess.janet",
-      "sha256": "414898c907aed02e0239b6fddf58f72a6f036bf9d21419f8596b0f2f63f5cab8",
+      "sha256": "a314040dec644677af3d273ad8806188da510443ce2b197ece3cb51ea3a155f4",
       "executable": false
     },
     {
@@ -413,7 +413,7 @@
     },
     {
       "path": ".github/workflows/public-checks.yml",
-      "sha256": "341fc259af8ed05fbbd12d4ff5c16907e750b71a853c049ff39af7151ff94b18",
+      "sha256": "afb07e69c12fdddf79b2b2539c7fec08006e08be7e760f265ccf81f6ff19074d",
       "executable": false
     },
     {
