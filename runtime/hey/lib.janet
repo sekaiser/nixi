@@ -280,9 +280,11 @@
 (defn- default-dotfiles-path []
   (or (env/nonempty "DOTFILES")
       (env/nonempty "DOTFILES_HOME")
+      # An installed launcher identifies its own consumer. A leftover legacy
+      # checkout must not silently redirect it when login variables are absent.
+      (env/nonempty "HEY_FLAKE_ROOT")
       (first-dir [(if-let [home (env/nonempty "HOME")]
                     (path/join home ".config/nix-darwin"))])
-      (env/nonempty "HEY_FLAKE_ROOT")
       (ignore-errors (os/realpath (path/join (dyn :syspath) "..")))))
 
 (def- *xdg*

@@ -184,6 +184,32 @@ os.execv({real_janet!r}, [{real_janet!r}, *sys.argv[1:]])
                 self.assertNotIn("stale runtime selected", result.stdout + result.stderr)
         self.assertIn("DRYRUN:", result.stdout)
 
+    def test_workspace_root_precedence_preserves_explicit_and_packaged_sources(self):
+        home = self.isolate_home()
+        legacy = home / ".config/nix-darwin"
+        legacy.mkdir(parents=True)
+        packaged = self.root / "packaged-consumer"
+        packaged.mkdir()
+        explicit = self.root / "explicit-consumer"
+        explicit.mkdir()
+        for dotfiles, fallback, embedded, expected in (
+                (None, None, str(packaged), packaged),
+                (None, str(self.consumer), str(packaged), self.consumer),
+                (str(explicit), str(self.consumer), str(packaged), explicit),
+                ("", "", str(packaged), packaged),
+                (None, None, None, legacy),
+                ("", "", "", legacy)):
+            with self.subTest(dotfiles=dotfiles, fallback=fallback, embedded=embedded):
+                for key, value in (("DOTFILES", dotfiles), ("DOTFILES_HOME", fallback),
+                                   ("HEY_FLAKE_ROOT", embedded)):
+                    if value is None:
+                        self.env.pop(key, None)
+                    else:
+                        self.env[key] = value
+                result = self.run_hey("path", "home")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), str(expected))
+
     def test_option_parser_schema_and_forwarding(self):
         self.isolate_home()
         self.env["JANET_PATH"] = ":".join([str(ROOT / "runtime"), self.env.get("JANET_PATH", "")])

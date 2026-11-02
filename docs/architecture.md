@@ -30,9 +30,11 @@ flake's source, while `hey.frameworkDir`, `hey.assetsDir`, `hey.binDir`, and
 
 Mutable workspace selection belongs to the `hey` runtime. Outside the legacy
 `HEYENV` compatibility override, runtime commands prefer explicit `DOTFILES`
-or `DOTFILES_HOME`, then the conventional `$HOME/.config/nix-darwin` checkout,
-and finally the immutable flake source embedded in the installed `hey`
-package. External workspaces can always be selected explicitly with `--flake`.
+or `DOTFILES_HOME`, then the immutable consumer source embedded in an installed
+`hey` package. The conventional `$HOME/.config/nix-darwin` checkout is a final
+compatibility fallback when no explicit or packaged workspace is configured;
+it must never redirect an installed launcher to a different consumer. External
+workspaces can always be selected explicitly with `--flake`.
 
 ## Module/Runtime Boundary
 

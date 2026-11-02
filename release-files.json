@@ -758,7 +758,7 @@
     },
     {
       "path": "test_tools/test_cli.py",
-      "sha256": "fb83ab2d93a9a3e3424f3fc2b517e487ce374f34e2a4d83d2dd7eea8f56e3e48",
+      "sha256": "5ae9c0ee42d2ef7d1bf09a180cc246b88386011af8270eda23520ad84024727b",
       "executable": false
     },
     {
@@ -1478,7 +1478,7 @@
     },
     {
       "path": "docs/architecture.md",
-      "sha256": "465e50bc7bcc703309761f4ef95791d8cb7a48aedecf59a792f715d589a5e2c1",
+      "sha256": "4655b236e5992f14ab7c0905b58b3b8e4afa16733d6ceb8202b9d5abbc2aa88a",
       "executable": false
     },
     {
@@ -2053,7 +2053,7 @@
     },
     {
       "path": "runtime/hey/lib.janet",
-      "sha256": "b54ad97f6e4e6d072f6eda21248a824b023edc9ecb724e0a63c3554e946ef71c",
+      "sha256": "1a8c6f6ac0cce7e15b26490c91ba29bce0f5e9ffe83e3b5c05edf698e3af187e",
       "executable": false
     },
     {
