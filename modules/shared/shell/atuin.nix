@@ -14,6 +14,11 @@ in {
   options.modules.shell.atuin = {
     enable = mkBoolOpt false;
     disableUpArrow = mkBoolOpt false;
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.unstable.atuin;
+      description = "Atuin package used for shell history and its optional features.";
+    };
     settings = lib.mkOption {
       type = toml.type;
       default = {};
@@ -22,9 +27,7 @@ in {
   };
 
   config = mkIf cfg.enable {
-    user.packages = [
-      pkgs.unstable.atuin
-    ];
+    user.packages = [cfg.package];
 
     modules.shell.atuin.settings = {
       auto_sync = lib.mkDefault false;

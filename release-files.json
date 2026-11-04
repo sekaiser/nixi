@@ -888,7 +888,7 @@
     },
     {
       "path": "checks/minimal-consumer.nix",
-      "sha256": "701a038aaaa4d08972f4da22157f07091e5f23f8b9e07bfddb505ec8b66dc46b",
+      "sha256": "253606b4f16aa72ab057444865648f96d9d0088433871234965409a1b973ccad",
       "executable": false
     },
     {
@@ -1073,7 +1073,7 @@
     },
     {
       "path": "docs/getting-started.md",
-      "sha256": "daa6dc74e8a93b115f564a4930db479c1830b308ec15fff99f707fd774dc1ad8",
+      "sha256": "25f3c62c5747bb614acb6b88ccb469b9b6b6891875a37663265ca29d770fa0b5",
       "executable": false
     },
     {
@@ -1658,7 +1658,7 @@
     },
     {
       "path": "modules/shared/shell/atuin.nix",
-      "sha256": "8606e124c95f71a1f7ccd90638e10065a8e122c8cf51cd68410ba4d40060079e",
+      "sha256": "5a248cef8f2dd76653162786a3be10b4c5fbfd84d3aa1563a3f23e83a997e30f",
       "executable": false
     },
     {

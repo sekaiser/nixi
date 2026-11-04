@@ -90,6 +90,9 @@ likewise live in the optional `atuin-workstation`, `rust-workstation`,
 `go-workstation` and `vim-workstation` profiles. See the migration notes for their
 scope. Explicitly disabling a base tool also suppresses its preset's effects.
 
+`modules.shell.atuin.package` accepts an Atuin derivation, defaulting to
+`pkgs.unstable.atuin`. Use it to select a different package or build features.
+
 `modules.dev.rust.packageSet` selects `"stable"` or `"unstable"` Nixpkgs for
 Rust and Cargo, plus the workstation profile's rustfmt, Clippy, rust-analyzer
 and cargo-llvm-cov. The default is `"unstable"`. Select `"stable"` when you need

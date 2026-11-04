@@ -92,6 +92,10 @@
     go = enableFeature host "dev" "go";
     vim = enableFeature host "editors" "vim";
     atuin = enableFeature host "shell" "atuin";
+    customAtuinPackage = host.pkgs.emptyDirectory // {pname = "custom-atuin";};
+    customAtuin = atuin.extendModules {
+      modules = [{modules.shell.atuin.package = customAtuinPackage;}];
+    };
     rustPreset = enableFeature host "profiles" "rust-workstation";
     stableRust = rust.extendModules {modules = [{modules.dev.rust.packageSet = "stable";}];};
     stableRustPreset = rustPreset.extendModules {modules = [{modules.dev.rust.packageSet = "stable";}];};
@@ -202,6 +206,9 @@
     && !hasPackage "editorconfig-core-c" vim
     && !(vim.config.environment.shellAliases ? v)
     && hasPackage "atuin" atuin
+    && atuin.config.modules.shell.atuin.package.drvPath == host.pkgs.unstable.atuin.drvPath
+    && hasPackage "custom-atuin" customAtuin
+    && !hasPackage "atuin" customAtuin
     && atuin.config.modules.shell.atuin.settings
     == {
       auto_sync = false;
