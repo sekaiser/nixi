@@ -202,7 +202,7 @@
     (echof "flake: %s" (flake-host-ref target))
     (echof "DOTFILES: %s" (target :dotfiles))
     (echof "DOTFILES_HOME: %s" (target :dotfiles))
-    (echof "NIX_CONFIG: %s" (if (empty? (os/getenv "NIX_CONFIG")) "<unset>" "<set; contents hidden>"))
+    (echof "NIX_CONFIG: %s" (if (empty? (or (os/getenv "NIX_CONFIG") "")) "<unset>" "<set; contents hidden>"))
     (echo "NIX_PATH: <cleared for nix commands>")
     (echof "build target: %s" (or build "<unsupported>"))
     (case* cmd
@@ -268,7 +268,7 @@
       (setenv-when "DOTFILES_HOME" (target :dotfiles))
       (log "DOTFILES=%s DOTFILES_HOME=%s NIX_CONFIG=%s"
            (os/getenv "DOTFILES") (os/getenv "DOTFILES_HOME")
-           (if (empty? (os/getenv "NIX_CONFIG")) "<unset>" "<set; contents hidden>"))
+           (if (empty? (or (os/getenv "NIX_CONFIG") "")) "<unset>" "<set; contents hidden>"))
       (cond
         check? (run-foreground-without-nix-path
                  @["nix" "flake" "check" "--impure" "--no-warn-dirty" "--no-use-registries"

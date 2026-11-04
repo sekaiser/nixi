@@ -318,6 +318,7 @@ os.execv({real_janet!r}, [{real_janet!r}, *sys.argv[1:]])
 
     def test_checkout_launcher_ignores_stale_installed_runtime(self):
         self.isolate_home()
+        self.env.pop("NIX_CONFIG", None)
         stale = self.root / "old-installed-runtime"
         (stale / "hey").mkdir(parents=True)
         (stale / "hey/init.janet").write_text('(error "stale runtime selected")\n')
@@ -1135,6 +1136,23 @@ sys.exit({status})
             self.assertEqual(result.returncode, 0, result.stderr)
             if selected == "1":
                 self.assertIn("Nix will run without it", result.stderr)
+
+    def test_sync_accepts_unset_or_empty_nix_config(self):
+        self.diagnostic_fixture()
+        log = self.root / "nix-invocation"
+        self.mock_command("nix", f"from pathlib import Path\nPath({str(log)!r}).touch()\n")
+        for config in (None, ""):
+            if config is None:
+                self.env.pop("NIX_CONFIG", None)
+            else:
+                self.env["NIX_CONFIG"] = config
+            for prefix, options in (([], []), (["-!"], []), ([], ["--explain"])):
+                with self.subTest(config=config, prefix=prefix, options=options):
+                    result = self.run_hey("-?", *prefix, "sync", "build", *options, "--flake", str(self.consumer) + "#laptop")
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("<unset>", result.stdout + result.stderr)
+                    self.assertEqual(log.exists(), not (prefix or options))
+                    log.unlink(missing_ok=True)
 
     def test_normal_sync_never_logs_nix_config_at_any_verbosity(self):
         self.diagnostic_fixture()

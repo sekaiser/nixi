@@ -333,7 +333,7 @@
     },
     {
       "path": "bin/hey.d/sync.janet",
-      "sha256": "90828064794756eb3cc2cec6d9a99c103aaa1949f9ac83daba169a1a9928d975",
+      "sha256": "b834b1ce2c714db2a5abe35c32d5efabff4fb1d4ece95e49ce0b9558f7adaebd",
       "executable": false
     },
     {
@@ -2478,7 +2478,7 @@
     },
     {
       "path": "test_tools/test_cli.py",
-      "sha256": "1e67acf32d35fa0ab574c61be67743005d3caa2e9fb746b672ec51be98e85cb3",
+      "sha256": "18c55d4d26222e0d62ed774d298331d97d1c15187eabbef5be5517bcbecd1650",
       "executable": false
     },
     {
