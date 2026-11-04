@@ -36,6 +36,40 @@ Current checks:
 - `package-context` compares host and exported package/check/shell recipes on
   all supported systems, using distinct stable, Darwin and unstable sources,
   ordered overlays and explicit dependency overrides.
+- `emacs-policy` evaluates the real Linux/Darwin module graph with a synthetic
+  Doom constructor, avoiding IFD and foreign Emacs builds. Both Linux
+  architectures and Darwin cover minimal/preset package sets, retained helper
+  priorities and wrapper ordering, disable behavior, fonts/aliases, custom package
+  and runtime paths, optional LaTeX, macOS bundle registration and the Tree-sitter
+  callback. This checks wiring; actual Emacs builds, grammar loading and GUI
+  acceptance remain separate. CI evaluates it through `flake check --no-build`.
+  The source contract checks the release URL/hash, Cocoa/PGTK, native compilation
+  and Tree-sitter, and compares every builder attribute except source with
+  Nixpkgs' release mode. Negative controls reject Git source, lost patches,
+  added autoreconf and missing GUI flags. This does not test patch application.
+  The separate opt-in `security/review-emacs-patches.py` qualifies archive patch
+  application and runs `test_tools/probe_emacs_source.el` in an existing 31.1
+  interpreter. Its explicit supplemental username correction passes 17/17 while
+  retaining the failing baseline/upstream controls. This review probe is not a
+  native corrected Emacs/Doom build or a default passing CI gate.
+- `dependency-coverage` classifies every public package definition, forces all
+  representative public scan derivations on three systems without realizing
+  outputs, and verifies the source-bound inventory and documented exclusions.
+  Native synthetic scanner tests exercise findings/no-match/incomplete protocols,
+  public-only staging, root selection, npm auth/config isolation, lock retention,
+  identifier normalization and bounded command capture. The runtime-input suite
+  also checks opt-in/read-only workflow policy and the three-platform scan matrix.
+  These checks do not contact advisory feeds or resolve excluded Doom/image graphs.
+- `agent-memory` checks service wiring and offline adapter contracts. Its opt-in
+  real Core test uses synthetic state and an ephemeral loopback listener outside
+  the Darwin build sandbox. `test_tools/probe_memory_http.mjs` is a separate
+  opt-in data-URL integrity probe for built Core packages; it reports each npm
+  resolution context and Node's bundled fetch separately. These bounded tests
+  do not establish every advisory's reachability or consumer acceptance.
+  `--require-bundled` requires both to pass; the replacement Node 24 pin proposal
+  adds this strict probe to mandatory native CI. It is not active on the working
+  pins. With `NIXI_MEMORY_CORE` and its `NIXI_MEMORY_NODE` supplied, the external
+  test suite also runs the strict probe and real Core round trip (14 tests).
 - `disko-opt-in` checks explicit Disko imports, absent providers, legacy
   `qcow-efi` descriptors and Cilium VM disk-layout compatibility. Ordinary Linux
   hosts must not load Disko; Darwin rejects the legacy image target.
@@ -46,6 +80,17 @@ Current checks:
   Source checks cover protected provider symlinks, ownership/modes, special-file
   refusal and concurrent replacement. Privileged traversal is exercised with
   simulated ownership and a synthetic root, never actual root access.
+  Three-target Git policy fixtures check default-off receipt tracking, selected
+  recipient paths, overlap rejection and the absence of automatic retirement.
+  Tracked-copy tests exercise private receipts and the packaged manual CLI,
+  read-only previews, explicit/stale tokens, unchanged identity/content, unsafe
+  ownership/mode/link refusal, locking and recoverable capture/interruption
+  handling. Only disposable synthetic files are retired. A test-only strict-
+  ancestor model supports in-process Linux namespace fixtures; actual CLI
+  subprocesses retain all production guards. Four positive CLI cases explicitly
+  skip under an unmapped sandbox root, where real refusal is tested instead.
+  `openvpn-client-boot` supplies real-root guest positives. Darwin and ARM Linux
+  native suites pass; actual provider/ACL and consumer recovery remain separate.
 - `ssh-certificate-tool` executes the packaged certificate helper with synthetic
   keys. Tests cover user/host signing, pre-signed input, validation before atomic
   replacement, FIFO/symlink/oversize refusal, encrypted CAs, Python environment
@@ -53,9 +98,21 @@ Current checks:
   principal mismatches and privilege-drop ordering are checked directly too.
   No root credentials or live services are used by these native build tests.
 - `service-overrides` applies a shared native disable/firewall-opt-out matrix to
-  OpenSSH, Caddy, Tang and Tailscale. Effective port changes must not retain old
-  openings; disabled services must not leave Nixi helper units behind. Addressed
+  OpenSSH, Caddy, Tang and Tailscale, plus native Docker/rootless and K3s disables.
+  Disabled daemons remove adapter grants, helper packages/units and Cilium
+  manifests/firewall trust; Docker client tools and explicit user groups remain.
+  Capability metadata must not acquire service entries from disabled adapters.
+  Effective port changes must not retain old openings; disabled services must
+  not leave Nixi helper units behind. Addressed
   Tang sockets use explicit consumer firewall policy.
+- `system-activation` is a required native security check. It exercises fixed
+  local output selection, clean privileged environments, stale checkpoints,
+  protected executables/metadata, lock contention, failure recovery and handled
+  termination using temporary fake profiles. Focused CLI cases mock sudo and
+  prove caller credentials reach only user builds, malformed outputs cannot
+  reach activation, build failures preserve status and temporary roots/locks
+  are released. A real isolated Nix preview refuses evaluation-time builds.
+  No live profile, root activation, service or bootloader is exercised.
 - `ssh-certificate-lifecycle` checks host-key/secret ordering, required startup,
   both daemon and socket startup, periodic renewal/reload and privilege-dropping
   user-file installation. It also evaluates opt-in user-certificate timers on
@@ -66,10 +123,28 @@ Current checks:
   and installer, including preservation of the previous certificate on failure.
   Native OpenSSH parsers check generated paths with spaces, quotes and percent
   characters; certificate labels are tested as literal shell data.
-- `ssh-certificate-boot` is a Linux-only VM test for first-boot ordering, both SSH
-  startup modes, renewal, unavailable secrets, root-assisted user signing and
-  refusal of root-only public-key symlinks/FIFOs. Run on a Linux builder with
-  virtualization support; evaluating the derivation alone is not a boot test.
+- `ssh-certificate-boot` runs the actual host-certificate units with daemon/socket
+  SSH startup, renewal, missing-CA preservation and blocked-CA dependency cases.
+  Root-assisted recipient signing rejects a root-only symlink and FIFO promptly.
+  Its three guests use synthetic keys. Hardware acceleration remains the default;
+  software emulation is an explicit review option with a bounded global timeout.
+  Evaluating the derivation alone is not a boot test.
+- `openvpn-client-boot` runs production preparation under real Linux root/systemd,
+  checking provider generations, private snapshots, exact recipient sudo grants,
+  unsafe hooks, ownership/ancestor links, FIFO bounds and clean recovery. It also
+  exercises packaged tracked installation/recipient retirement, OMP helper updates
+  and the exact generated Home Manager hook. Its observer makes no VPN connection.
+  Default checks require a hardware-capable test runner; explicit bounded TCG
+  reproductions use `allowSoftwareEmulation = true`. See the dated boot evidence.
+- `system-activation-boot` exercises the packaged activation helper as real root
+  inside a disposable Linux guest. It covers dry/test activation, real refusal
+  boundaries, distinct-system switch/return and recovery after the alternate
+  genuine activator fails after changing configuration and checkpoints. Both
+  closures and generations remain retained. The guest uses direct kernel boot
+  with GRUB disabled; physical bootloader/reboot behavior is outside this scope.
+  Default checks retain hardware acceleration requirements; software emulation
+  requires explicit opt-in. VM checks are classified separately: the native public
+  workflow evaluates them but does not execute them automatically.
 - `shell-environment` runs generated Linux/Darwin shell initialization in clean
   environments for two users, checking custom XDG paths, literal exports, variable
   name validation, PATH preservation and user isolation for Go/AWS/Docker/tmux.
@@ -80,6 +155,11 @@ Current checks:
 - `eks-integration` checks Linux/Darwin AWS authentication metadata and runs the
   generated OpenVPN credential preparation against dummy files. It covers path
   quoting, missing final newlines, validation, atomic replacement and permissions.
+  Its package/file matrix covers AWS-only, SAML-only, EKS opt-in/disable and
+  consumer-owned overrides on x86_64 Linux, ARM Linux and Darwin configurations;
+  Linux bastion fixtures retain EKS by default and accept an explicit opt-out.
+  Four serial CLI regressions cover generated authentication metadata, login
+  provider selection with EKS disabled, diagnostics and invalid optional values.
   It rejects structured INI injection and malformed names/keys, parses generated
   settings with the AWS CLI without authenticating, and checks raw overrides,
   nested S3 values and SAML scalar serialization.
@@ -88,6 +168,13 @@ Current checks:
 - `gnupg` checks platform-specific Nix pinentry, native HM overrides, per-user
   service environments, and executes directory initialization against disposable
   fixtures, including existing permissions and symlink refusal.
+- `java-policy` evaluates runtime-only, legacy and custom package selection,
+  workstation tools, disabled presets, Zsh gating and consumer overrides on both
+  Linux architectures and Darwin. Native JDK 21/25 and workstation profiles use
+  collision-rejecting package unions; a bounded compiler/runtime probe verifies
+  the selected executables. `shell-environment` separately executes generated
+  selected-user, other-user and root environments to check Java variable scope.
+  No real consumer project, global shell or installed profile is changed.
 - `user-policy` verifies neutral Linux account defaults, explicit administrator
   and workstation profiles, service-scoped Docker access and removed helper exports.
   Docker enablement must not schedule pruning or open TCP ports; native pruning
@@ -117,12 +204,17 @@ Current checks:
   checks neutral Zed defaults, explicit presets and individual overrides.
   It also checks native Docker-context ownership and opt-in Colima directories,
   executing directory creation with dry-run and existing-state fixtures.
+  Its three-target Alacritty matrix checks enable/disable, Darwin Nix Apps
+  registration, retained user installation, TERMINFO and shell/TOML overrides.
 - `janet-vendor` rejects native Janet build outputs under shared source; these
   must be built per system instead of committed.
 - `k3s-server-arch` verifies secure plain-server defaults and optional pinned
-  addons for both aarch64 and x86_64 Linux hosts.
+  addons for both aarch64 and x86_64 Linux hosts. Default/custom API ports and
+  pod CIDRs must agree across the K3s command and generated HelmChart; conflicting
+  flags, forced Helm values, disabled charts and unsupported IPAM are rejected.
 - `k3s-addon-manifests` builds the pinned chart and bootstrap inputs on the
-  native check platform, renders the Helm chart, and validates the YAML objects.
+  native check platform, renders default/custom Helm charts, and validates agent
+  API environment variables, the IPAM ConfigMap, images and CRD/Flux objects.
 - `minimal-consumer` checks that an external consumer can opt out of Hey and
   workstation policy, choose its Home Manager version and retain its revision.
   It also forces Linux/Darwin activation generation with optional modules disabled.
@@ -145,6 +237,10 @@ Current checks:
   `cli-contracts` separately executes all three Janet suite entrypoints (unit,
   generic CLI and UTM CLI) with a sanitized fixture environment and bounded
   supervisor per suite. It is built by public CI, not merely evaluated.
+  Before those suites it runs five serial dispatcher regressions: optional-module
+  failure isolation, metadata-only help/which, all command names and aliases,
+  argument/status preservation, missing-module/registration failures, import
+  caching and external dispatch. Only selected command implementations load.
   `runtime-inputs` tests descriptor-checked reads, secret-size limits, safe
   TOML/YAML parsing, redacted errors and effective OpenSSH Match/Include policy
   without loading private host keys or contacting a server.
@@ -256,14 +352,28 @@ Current checks:
   readiness, missing addresses, literal arguments and atomic IP-file publication.
   Caddy's actual parser adapts evaluated configuration snippets to verify neutral
   defaults and the opt-in Gitea/Tailscale profile without requesting certificates.
-  These are configuration/script tests, not a Linux VM boot or tailnet test.
-  Gitea compatibility defaults retain their storage location while native options
-  override deployment settings without `mkForce`. Enabling Gitea alone must not
-  open TCP firewall ports, and native service disablement remains authoritative.
-- `agent-integration` evaluates Linux/Darwin OMP defaults and explicit overrides,
-  builds native YAML and checks parser round trips. It executes generated RTK
-  activation with a mock binary and Home Manager's actual `run` helper, checking
-  the explicit Codex home, dry runs, missing commands and disabled integrations.
+  A both-Linux-architecture matrix compares the minimal Gitea adapter with native
+  composition and checks explicit policy selection, compatibility defaults,
+  native overrides, disable precedence and Tailscale/native composition. Native
+  Python parses rendered evaluated Gitea settings for native, compatibility and
+  overridden deployments. These fixtures do not execute Gitea or its upstream
+  runtime configuration builder. Enabling Gitea alone must not open TCP firewall
+  ports, and native service disablement remains authoritative. Linux VM boot,
+  tailnet reachability, database/authentication/mail and data migration remain
+  separate acceptance gates.
+- `agent-integration` evaluates neutral OMP and opt-in workstation policy on both
+  Linux architectures and Darwin, including ordinary disable/override precedence,
+  nullable preferences, explicit model requirements, consumer-owned files and
+  selected/other-user activation boundaries. It builds native YAML and checks
+  parser round trips. Generated OMP activation runs against disposable settings
+  with Home Manager's actual `run` helper, checking dry runs, writable private
+  ownership, undeclared-value preservation and repeat activation. Focused sync
+  helper regressions retain malformed YAML, unsafe path and legacy-link coverage.
+  Generated RTK activation uses a mock binary to check the explicit Codex home,
+  dry runs, missing commands and disabled integrations. The native ARM run records
+  real untrusted-root rejection; separate guest coverage executes positive OMP
+  helper and exact generated-hook boundaries. Real OMP application/concurrent-write
+  acceptance remains separate.
 - `agent-capability-manifest` verifies that agent modules render their generic
   command, directory, and file expectations into the runtime capability
   manifest while respecting disabled checks. It also enforces the versioned

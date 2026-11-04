@@ -2,413 +2,8 @@
   "version": 1,
   "files": [
     {
-      "path": "lib/internal/compose-doom-dir.nix",
-      "sha256": "11af78246903f8a264433d1a246e6d50c6e21783d0ed02f648be5cae6f4529f0",
-      "executable": false
-    },
-    {
-      "path": "checks/doom-extra-config.nix",
-      "sha256": "c545dbd0a2295c66690dc46467168202c235fb5595585a52ec83d6790b37fbd1",
-      "executable": false
-    },
-    {
-      "path": "tools/sync_omp_config.py",
-      "sha256": "5d4923223ecb9e16741be9f60a73b46ec986900037c16f1e9328e5fe379136d0",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_omp_config.py",
-      "sha256": "111cef1b1226e4e913d562b6f0bc3e6faf6da3aa545fe54459952cc7730dd0dc",
-      "executable": false
-    },
-    {
-      "path": "docs/omp.md",
-      "sha256": "9683b42dccdd7065cb13f9d2b6da281bca6bbeb71ededec7f6e38b6a624b7917",
-      "executable": false
-    },
-    {
-      "path": "packages/taste-skill.nix",
-      "sha256": "618d00ca4e3e2faf7120e65ffd627d6366afc9dfc6c566447469ca3a71f08779",
-      "executable": false
-    },
-    {
-      "path": "packages/humanizer.nix",
-      "sha256": "bb271ff4be5823a37b5a3f8f64ded61ac0517fe6994809a3dacd6ccd2e6ca844",
-      "executable": false
-    },
-    {
-      "path": "checks/codex-skills.nix",
-      "sha256": "a480ee193b65970d0e8878948078410fb1fc3fea1e4601e10f5f4d1d866b5b1e",
-      "executable": false
-    },
-    {
-      "path": "docs/codex-skills.md",
-      "sha256": "e96aca9b69c6007c6fae3e90394aee00bf6c40f2d49df9d7db6fb8af907f8a62",
-      "executable": false
-    },
-    {
-      "path": "assets/agent-memory/package.json",
-      "sha256": "0db36eb78bb753ee143b83c03eda5b3c176cd162b3f47ced4fca1e40535ba59b",
-      "executable": false
-    },
-    {
-      "path": "assets/agent-memory/package-lock.json",
-      "sha256": "142bcf8dbb308fc0cb07d935d3f6afdebf613050ab65207d7e5a0cf5a76f330f",
-      "executable": false
-    },
-    {
-      "path": "packages/tencent-memory-core.nix",
-      "sha256": "4acc5fd66f5472b63c139e49c23570d00f4200d57ce1f7a171bb08f30b50943d",
-      "executable": false
-    },
-    {
-      "path": "packages/agent-memory.nix",
-      "sha256": "eeda0e25558933499933e96b394557afc1aec3b73949dfe5a9effaac0fada18c",
-      "executable": false
-    },
-    {
-      "path": "tools/agent_memory.py",
-      "sha256": "57a6609acd9c6c7295e500d0e4ff0576f38fc0e5298d937863ecd874b30c965c",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/agents/memory.nix",
-      "sha256": "01b39f3baea74732550630d25a03932753b320b3c6f401eb7619f3bacc486098",
-      "executable": false
-    },
-    {
-      "path": "checks/agent-memory.nix",
-      "sha256": "054d552e85d47b2e967ab16ff22fb0859ab05fa9eca7c633f5e30d07ecba1abe",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_agent_memory.py",
-      "sha256": "69ef1aed5a22b63722451de13c7785a703faf492d1c54f88abd3a3111791506d",
-      "executable": false
-    },
-    {
-      "path": "docs/agent-memory.md",
-      "sha256": "733f7dbea8369e76852192e7381eef84484fc29d2a19738531ac192414a85887",
-      "executable": false
-    },
-    {
       "path": ".github/workflows/dependency-maintenance.yml",
-      "sha256": "304c128a2a4dc166a65628c5a4e24fc1e8d199054dcbad32c7f80db88684aca5",
-      "executable": false
-    },
-    {
-      "path": "security/overrides.json",
-      "sha256": "58d2f80001cfd334e03d2100b41e5d77e3c8a0036c524b22f70d0436056e0ff0",
-      "executable": false
-    },
-    {
-      "path": "tools/dependency_report.py",
-      "sha256": "34f207ab14e81a253751ab969ead1e675b24689cda354fe05df40e60edac8d4d",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_dependency_report.py",
-      "sha256": "9299b836a2f0f9d895ce82fdeb8195dc159c16cf714c7a877ccc566c2e1bd957",
-      "executable": false
-    },
-    {
-      "path": "bin/hey.d/security.janet",
-      "sha256": "cdcff12108be22b5255ae515663df16586c10eaf62a2628d0b3a82201299f2bd",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/atuin-workstation.nix",
-      "sha256": "0c27e98dcbad87b345aac5295f29b2c9efe1020df5ca6520caa565a4f03c205b",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/rust-workstation.nix",
-      "sha256": "e27b55fb4b1d88bc160fbf9a27b51465ff0ef6a8c9f5617c7d3a498dabe20d8f",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/go-workstation.nix",
-      "sha256": "e9a3c092cf3e5514c92f19f858e74c2564e34edc5b202be55a0b1faf731a9792",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/vim-workstation.nix",
-      "sha256": "004cce2a2a04de626dd89ee3dadbe7e4419c6e0c9148be41cc5e2ec44108e124",
-      "executable": false
-    },
-    {
-      "path": "overlays/security.nix",
-      "sha256": "e4aa552b2d73798bfca9d38904dd9f1bc4a6236a0b44689ce716806cc6f43a67",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/alacritty-workstation.nix",
-      "sha256": "3ad69dcc8f273f23d345dc2eb6e8e36faf98da07a87a9571292d1e19b1d8f7ef",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/doom-workstation.nix",
-      "sha256": "8bd5568107d33364f11ccf6ff737deacd2d6e906e8b3387303ea7c3f9081430a",
-      "executable": false
-    },
-    {
-      "path": "assets/doom-minimal/init.el",
-      "sha256": "7121d73222be23b51ef7d9d9bd4a17593d3712bf38d22a46c3b22d10db9f8255",
-      "executable": false
-    },
-    {
-      "path": "assets/doom-minimal/config.el",
-      "sha256": "a4aca2cf2b04c5384d1a2c5fcb022d16151d02c1095cd9ff34d48641b57374e0",
-      "executable": false
-    },
-    {
-      "path": "assets/doom-minimal/packages.el",
-      "sha256": "3fd396674b5d5900b1f0bf11a00bbb1de8ec3110235f10e230b872e64efd5cb2",
-      "executable": false
-    },
-    {
-      "path": "docs/security-review.md",
-      "sha256": "ffc892bc933acfb233388669ad75d5fa434ea09179f73c140be9c368fe416d66",
-      "executable": false
-    },
-    {
-      "path": "SECURITY.md",
-      "sha256": "d0f803855d586b2208134cd9b1b34c86d5cfecf798d0dc57737b15df2702c866",
-      "executable": false
-    },
-    {
-      "path": "checks/ci-check-plan.nix",
-      "sha256": "682cb8773151b00c8f7099926df3594c9783a4a5b0cf44778bea1a72ff4a5982",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/process-table.janet",
-      "sha256": "008390363bdf2282f58812a3b06b307b00e7945582a334317eb2a39724840c51",
-      "executable": false
-    },
-    {
-      "path": "test/hey/process-table.janet",
-      "sha256": "8b6e45e22ccaab8aad765109bfa9cd1358dde3e96563b50db2b7d9e028fa2cc7",
-      "executable": false
-    },
-    {
-      "path": "test_tools/check-policy.json",
-      "sha256": "01eb06c519cd4e619aecc6df9d02cb5dc297d67440df12b5435f0382a663610a",
-      "executable": false
-    },
-    {
-      "path": "test_tools/check_plan.py",
-      "sha256": "748f0458767ea9cee28d3f701e398829ed1a53341c065e3be7d0c127b8c37689",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_check_plan.py",
-      "sha256": "95fa2cc9f5269ba73a16f19c150ebe875609075384a986f2d4fb612ae7797bf9",
-      "executable": false
-    },
-    {
-      "path": "packages/hey-python.nix",
-      "sha256": "68dbee9da9a7c0520db3d6539d286e137fa84481e3c166d5d4cc1e3fe997158e",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/eks/credentials.janet",
-      "sha256": "03a82b70672dc8b36d666ab88fdc44a364cce564f2418d426da4604f0b9f61e4",
-      "executable": false
-    },
-    {
-      "path": "tools/ssh_diagnostics.py",
-      "sha256": "17fef149303a39092b7c0ee7dcd055b659f2d4887edbb8e376a302bdc5dbd7f0",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_ssh_diagnostics.py",
-      "sha256": "17802f5413010e66cd05eae29dce4db2bc4a20380dec2d4eb6e4638ff62f6e71",
-      "executable": false
-    },
-    {
-      "path": "tools/runtime_input.py",
-      "sha256": "2bbb9415bba0542276d5b07c21d8b25c7225be4b1197d9d7dae16314ee60f7fc",
-      "executable": false
-    },
-    {
-      "path": "tools/agent_config.py",
-      "sha256": "87a18b298b80eed12b60889a949c99d45546829c57408a9bff425bf8a80ef677",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/input.janet",
-      "sha256": "5c9aad48acdc5c895156aa15da832fa9ee1ec60643083e76787d09033acdc164",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/ssh-policy.sh",
-      "sha256": "e1ea2d7a857bdb39c6227ef0952e3b9fd4860e73f5f9eaa71fb37ceac31439da",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_runtime_inputs.py",
-      "sha256": "4113a5f12daae2d957e4608bc77ceac1793d23327a902b0f5c858eb776856acc",
-      "executable": false
-    },
-    {
-      "path": "test_tools/run_contract_tests.py",
-      "sha256": "2afc7e77ac0a68190c74a08dfd1178d820822a6bd91c9b2dd94c0e66d98b5ba2",
-      "executable": false
-    },
-    {
-      "path": "checks/runtime-inputs.nix",
-      "sha256": "454424390ff77e89710030253f1ffc34ef62b7038f1d66875d5d13caa1d27770",
-      "executable": false
-    },
-    {
-      "path": "checks/cli-contracts.nix",
-      "sha256": "c4b8832f46a3b6f378a6a8429e229cd9afcaa0c612237689fe0b7aa71c251e59",
-      "executable": false
-    },
-    {
-      "path": "checks/runtime-secret-paths.nix",
-      "sha256": "a8aa10c0507b4cef6da755f0b55c0c2270f15076ff805b6b218261e7d6692deb",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/generation-policy.janet",
-      "sha256": "051c4bac336c75035181f0c1f11bdb1f3f4ca0126c438a1a1b2bcfa8e72092af",
-      "executable": false
-    },
-    {
-      "path": "test/hey/generation-policy.janet",
-      "sha256": "e10ae9cd2a424e821c02d4e26a27a87e9daf81f40bc7563bc0b6a20ba6c03ad2",
-      "executable": false
-    },
-    {
-      "path": "modules/optional/sops-darwin.nix",
-      "sha256": "0ddd5db7c259fee025257ba76db494cef67baf25562557e88778462e85fa11ba",
-      "executable": false
-    },
-    {
-      "path": "checks/sops-darwin.nix",
-      "sha256": "0fd1dfa5157b7230d9d8ea0648e1b0222a87f1fb00a960ced8cb69c1e1f9bc65",
-      "executable": false
-    },
-    {
-      "path": "tools/process-supervisor/main.c",
-      "sha256": "596decb60445cfc13f4f8f7a2ee4071e11f9a2b6927dc5e6579b55e5df739a7c",
-      "executable": false
-    },
-    {
-      "path": "tools/process-supervisor/README.md",
-      "sha256": "22e2dab38f5a75a5d09872cbd63c96e6f21cef22b73fdadc263d0c6a62aac174",
-      "executable": false
-    },
-    {
-      "path": "packages/process-supervisor.nix",
-      "sha256": "8b7c2d0885a520c18a1b48ecb39e96a61935a51cb904139044cdb8d65986ec87",
-      "executable": false
-    },
-    {
-      "path": "checks/process-supervisor.nix",
-      "sha256": "fe90a9ab2c2d49fcd00ff569d4585ec708d4ea78371d9ba9c0fba25e623fcd74",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_process_supervisor.py",
-      "sha256": "217f52e33611fb1a29ef758e224d2642c9c28785d13d1f844ef9803e15d1e54b",
-      "executable": false
-    },
-    {
-      "path": "bin/tmuxsel",
-      "sha256": "e4409a44fbf1593ea29511b40fc33e14b0e73079ddf09feb50824849358ec17b",
-      "executable": true
-    },
-    {
-      "path": "packages/tmuxsel.nix",
-      "sha256": "0fcbd5ddc16028b1b07122566f14ba2dbd7c13d34465b8b42f69af6b46d985c2",
-      "executable": false
-    },
-    {
-      "path": "checks/homelab-policy.nix",
-      "sha256": "79495629f2c1caf27296146094be6b426de179f405bda246e21b9862e1621694",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_shell_startup.py",
-      "sha256": "911133bf7cadc3da8202fc07e457678269038a1ebb6852d3525b43db400a5848",
-      "executable": false
-    },
-    {
-      "path": "tools/README.md",
-      "sha256": "77f966e66f62ba72437869bf17d77a74b41f212eaf03ccd2e7b9a335b3b3ebce",
-      "executable": false
-    },
-    {
-      "path": "test_tools/README.md",
-      "sha256": "84a0875d52ff47466f2606ba74c9684e0f939689154cabfaf1ec29f4dea98aa0",
-      "executable": false
-    },
-    {
-      "path": "checks/service-overrides.nix",
-      "sha256": "ef384b6e79b275697878ce4fba2ed2a449c62b9157804b7caf53c2f81fdc400f",
-      "executable": false
-    },
-    {
-      "path": "checks/ssh-certificate-tool.nix",
-      "sha256": "c16a66610ad89a2af1d62e15ded208ae5b4e82fc53ffabc277c88d0e09bd3b9f",
-      "executable": false
-    },
-    {
-      "path": "docs/dependencies.md",
-      "sha256": "95f583401719c542f3f847b2b87493d9253e2b14e08957186668ae82002481e4",
-      "executable": false
-    },
-    {
-      "path": "lib/internal/addon-pins.nix",
-      "sha256": "5241369b978b7dc0ce8e4b1099bdcec56af6f18df248f81aeff760991c318fda",
-      "executable": false
-    },
-    {
-      "path": "packages/ssh-certificate.nix",
-      "sha256": "80e415264c202f363b2a793502f832af2354d1c2f14c3efc0c15dd7f1073b2a7",
-      "executable": false
-    },
-    {
-      "path": "tools/ssh_certificate.py",
-      "sha256": "ef977dd39d383673e552eaf9cfd39c95e60d2ff25c9a256468416e3c81ba0ff5",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_ssh_certificate.py",
-      "sha256": "0eadb62eece752ef5b72d626ba660bbd6ba707fecfc7a87b43fe33c4b421944f",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/subprocess.janet",
-      "sha256": "a314040dec644677af3d273ad8806188da510443ce2b197ece3cb51ea3a155f4",
-      "executable": false
-    },
-    {
-      "path": "lib/internal/aws-ini.nix",
-      "sha256": "799cd228f2f9215574c37bd369f1013df14e497bf627f5f3da3dc210128e995c",
-      "executable": false
-    },
-    {
-      "path": "lib/internal/file-contracts.nix",
-      "sha256": "1c20092c5fe5c710dbd9c5a862ade8380a8404d2edbc7546d584b4b83537bd78",
-      "executable": false
-    },
-    {
-      "path": "lib/internal/ssh-config.nix",
-      "sha256": "debf337311af71b0feb9e9a7939444c6c9c96e33dda7cfc36f0afcedf31a0c28",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/linux/services/ssh-user-certificates.nix",
-      "sha256": "401ccc56bb06f2e186ab65c5bbabad34bdf3c237728c22f8bb6cce413505043b",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/darwin/services/ssh-user-certificates.nix",
-      "sha256": "e7b195a4866cb7ac2b0d94c96418fd9f94d5bd6d651898520354d36c378ea9d1",
+      "sha256": "fea9889ece48db2c1d76820a2a62f2686e00e9404ae90e512ed53e24ab9a66da",
       "executable": false
     },
     {
@@ -417,353 +12,38 @@
       "executable": false
     },
     {
-      "path": "test_tools/run_cli_tests.py",
-      "sha256": "d1586220d1b5478290c69e9b27e94a94e0cb0fade663c462f5cd6fc39812c056",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_cli_runner.py",
-      "sha256": "2a68583b78167fcfeb7885dad42c943bb7db7bd5d282438400c3690838883ae0",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/linux/profiles/secure-ssh.nix",
-      "sha256": "84ac1cd5f4350877ca744fc24a6912c664e5655cdc4f1e1c217cbe8c78f51685",
-      "executable": false
-    },
-    {
-      "path": "docs/security.md",
-      "sha256": "6e3b1fc69b2125ccab09d715dc9c64a2c82d40d54a156220dcc4128f648bf8c7",
-      "executable": false
-    },
-    {
-      "path": "modules/optional/disko.nix",
-      "sha256": "ae56ba7fc330c1cf9e61032f744b1b07cca550f31b0bf71e2b6190a592b3a238",
-      "executable": false
-    },
-    {
-      "path": "checks/package-context.nix",
-      "sha256": "f674dfea9d451dbdd798d0bd21e459ede61b4f7f648cf85a558cad06d991352d",
-      "executable": false
-    },
-    {
-      "path": "checks/disko-opt-in.nix",
-      "sha256": "4e5ebd5554f8ebcb5c4b3958c755f2f8e4768263ca23df3faab4d51174d5805d",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/vm-policy.janet",
-      "sha256": "9453ef82a47e547375f04a5a051f71ecaf45134f0d3be3b01d31d88dd810f289",
-      "executable": false
-    },
-    {
-      "path": "checks/runtime-metadata.nix",
-      "sha256": "c0b4edbc5a79d44d3b9391a0a842a68d6e514bb9802564d911d2466babab37e2",
-      "executable": false
-    },
-    {
-      "path": "checks/eks-integration.nix",
-      "sha256": "9fa76bd94444322afd6454ef15b6141387790343f046aca1fbb2bbe20adbaa09",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-hosts/_hidden.nix",
-      "sha256": "a15c35a9c47d832f78b3b0cec7ba07947cd0fe05f1c726fc01461959603e614f",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-hosts/_hidden-entry/default.nix",
-      "sha256": "48e804fb3bcbe9add4bf6c0be53ed8915e1b02ae1f966c3763df684767cbda38",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-hosts/_hidden-group/leaf.nix",
-      "sha256": "c1ae56952b2bc5436b0240846d9f29922cfb5bb13f1f5d737e819121dba20ab6",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-modules/_hidden.nix",
-      "sha256": "e03ef517f2d195a7f5162c1b4f5968542347105b39321be70505d0d01236c1e0",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-modules/_hidden-entry/default.nix",
-      "sha256": "211fd76084d63c5a6cfa22fb58f37bcbeb89dd99fab0d5f7cc029f8499d07fc4",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-modules/_hidden-group/leaf.nix",
-      "sha256": "aab68501ef5ba973300fb666886184d50fc933ac8ac49d746d1b8df7de15ac59",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/eks/common.janet",
-      "sha256": "4a606b218ebac13206e51297e95ee9e6c771acb523732dac176d8c3af883563f",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/eks/auth.janet",
-      "sha256": "9031a3778b8e84a733c036bb620d8f9a362596de02d20ef07ee75de77bec814f",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/eks/diagnostics.janet",
-      "sha256": "f7d1d318fa8cdb27b1cff23163cbbb28d109070410043d961d80304bf208020b",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/eks/transport.janet",
-      "sha256": "92072d30e8743e21e2fe9d5235c5ff0f36f6cf409afae20fd7b595cac3d03414",
-      "executable": false
-    },
-    {
-      "path": "tools/openvpn_credentials.py",
-      "sha256": "9754e4842516b08945bd12a9c0fd248e667f483250bf67eb3330ae548721e821",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_openvpn_credentials.py",
-      "sha256": "b9d77c20c0ac002ffa3cb84a118f5cc78d6b119f7623eaa134d0c4a8cceea4a6",
-      "executable": false
-    },
-    {
-      "path": "checks/agent-integration.nix",
-      "sha256": "f04deb655b95b9fce06bbf087a4cac8eacf7e7dc27bb8446418cd3d46f5d1dcf",
-      "executable": false
-    },
-    {
-      "path": "checks/network-service-integration.nix",
-      "sha256": "c68cc53e0d44203ff100e76a3abcf8bdf2a4eb0ee3865833dc55f96b9b97ac7b",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/linux/profiles/gitea-tailscale.nix",
-      "sha256": "06ad48b3e52bbf2077a248cc7350f054e1a5c1067389c1ad65b490e1d1f263ea",
-      "executable": false
-    },
-    {
-      "path": "checks/gnupg.nix",
-      "sha256": "b7a6c2b34223c138f0677d6b1d7289ef72115129ffe82f1a23444dbba4c98e10",
-      "executable": false
-    },
-    {
-      "path": "checks/user-policy.nix",
-      "sha256": "7501981ae9ba62a5fda97061ef1b448922eee6fc93a421fab98b4a112506ce40",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/linux/profiles/administrator.nix",
-      "sha256": "b7a8e29524819946b36bb9282e6a90205f6c028a05706f80606dafa9aaa5ab77",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/linux/profiles/workstation.nix",
-      "sha256": "40abd467b6d942dd0112af6a642f80b06a99d380342a515efb8578350ea236a3",
-      "executable": false
-    },
-    {
-      "path": "checks/dependency-overrides.nix",
-      "sha256": "78921dde1d14751cb422ec30549add090f1f68bd84972fd6acd611815218d1a5",
-      "executable": false
-    },
-    {
-      "path": "checks/zsh-plugins.nix",
-      "sha256": "ef0c35683c41c3e12fa2cd77295aba776c2da2326a8e8904bc76870ad802ead1",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/host-info.nix",
-      "sha256": "ac732eb05924904b636b74e6212366abd098e5f54d079934aab352ac4626c71c",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/discovery-relative/helper.nix",
-      "sha256": "672411bb682720607090b6331b6d45580696d5c67462f0d4a35498731cb6d366",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/discovery-relative/host-module.nix",
-      "sha256": "f37da1e9eee3606c4d268cc676c1e35f353546fa7e46e1f26916205633a1b0f2",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/discovery-relative/hosts/group/server.nix",
-      "sha256": "c9418a9bfd5db7ef513ee3cdacdf69fbb4bb83432004b997334fa905ee008c68",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/discovery-relative/modules/flat.nix",
-      "sha256": "4d43573dd7d73cbd0d41645f31546b63bf00820493a119c4a9645a9ec03bdfc3",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/discovery-relative/modules/group/nested.nix",
-      "sha256": "dcad51de30668d7d39bbb85e9b2ee66278c35e070c3741b32e1f159d62fbed9d",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-modules-group-collision/group.nix",
-      "sha256": "22e7397941c11edde5eca0826a8180ecb332150f74fee47b6a3dbc4afb08da52",
-      "executable": false
-    },
-    {
-      "path": "checks/fixtures/map-modules-group-collision/group/nested.nix",
-      "sha256": "2189d04691e902a2dbfdec95a95475a3cc34d2585ec0453d6ed7709f7a445010",
-      "executable": false
-    },
-    {
-      "path": "test/cli/generic.janet",
-      "sha256": "091a2058a664a753b80558d4efcfb3298e917fbcb49edc609cc430bd8de1bcad",
-      "executable": false
-    },
-    {
-      "path": "test/cli/support.janet",
-      "sha256": "db9bd168dddaed4f5a1b1a900c677f5f8bf652f887f05fdae5126b32c03610db",
-      "executable": false
-    },
-    {
-      "path": "test/cli/unit.janet",
-      "sha256": "94972af11baae327710e4119169054544b71ca0607de72b01d58488a58e2e7d8",
-      "executable": false
-    },
-    {
-      "path": "test/cli/utm.janet",
-      "sha256": "27114297f3ebcebc73371ea136dfcae12641e10b42cd98e93d8a3ca4b12a33fc",
-      "executable": false
-    },
-    {
-      "path": "checks/desktop-policy.nix",
-      "sha256": "94c309bb547a2502383e21734e662572e9ce8cc3b7b8748ba657acb70834ab93",
-      "executable": false
-    },
-    {
-      "path": "checks/shell-environment.nix",
-      "sha256": "c5b5861383accf9e2f26adbb8aaa505b13bb5c24aa7d45d36e13a103ea49fc5f",
-      "executable": false
-    },
-    {
-      "path": "checks/ssh-certificate-boot.nix",
-      "sha256": "062845e0b4e941384f4ec3b8f16b46799fce50647ea70314feb4f1e224b9c356",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/zed-workstation.nix",
-      "sha256": "2cfd4517bbb83909be6240e94a520ba88ded5b6576290cabcec1e1a738b9c019",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/check-definitions.nix",
-      "sha256": "d42a5235330f5c9d02404264d97e87e1951e8b2e3f52675c4a86bc95bbec0886",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/flake-outputs.nix",
-      "sha256": "06bf11f18c04124e06f57c65ecbe3c22599c84349a67b0f3592bbca4f9d0569d",
-      "executable": false
-    },
-    {
-      "path": "checks/ssh-certificate-lifecycle.nix",
-      "sha256": "a283f3f2e9e2fa66e77d02098a17fde9743d75a9332472a2d107390c7735d529",
-      "executable": false
-    },
-    {
-      "path": "checks/user-file-installation.nix",
-      "sha256": "e94be5084db00ffa3331d06079bd108876d5f6dfef13862188906a94dd0d1893",
-      "executable": false
-    },
-    {
-      "path": "packages/install-user-file.nix",
-      "sha256": "d1830f8a434e5f2be7b8c9f1d85d1f4584e195f2ac3164b769eb5190257e8278",
-      "executable": false
-    },
-    {
-      "path": "tools/install_user_file.py",
-      "sha256": "5deb94db5827661f3f71d6b18f216810a4a33ee5b5ad91db8e1db9374c36d07d",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_install_user_file.py",
-      "sha256": "d0a6cf1b9953540c64d70ea0c464ddd3626d857f604717c9a010377680742010",
-      "executable": false
-    },
-    {
-      "path": "checks/home-manager-integration.nix",
-      "sha256": "b7e5d8cbf32b0c2cefe25cfb4dd39d32cdc7b6e61f5f656e5e16d81ce8d767fc",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/lock.janet",
-      "sha256": "7cfd64db2d5d4771b998ce6f596f23f3a40944e983c9dce31ce5015c48ff2401",
-      "executable": false
-    },
-    {
-      "path": "test/hey/lock.janet",
-      "sha256": "ddc529a51041f7742ecfcb6dcb2c340f0cb53b118baf8ea9f8938731c312e93e",
-      "executable": false
-    },
-    {
-      "path": "test/hey/ssh.janet",
-      "sha256": "036d37177fa8a0fb7a2f1d7f895a4c9e858014f7077734d0eed78dddfb2398a8",
-      "executable": false
-    },
-    {
-      "path": "checks/cli-behavior.nix",
-      "sha256": "547bff108be875c0be7b1f07377579df7865ff73a0608d81c82676bbbf84823f",
-      "executable": false
-    },
-    {
-      "path": "checks/k3s-addon-manifests.nix",
-      "sha256": "d989dc5cd335854cd2102e97325c776bc0e4edb522a6d977aa3a199ba5080b29",
-      "executable": false
-    },
-    {
-      "path": "checks/lazy-outputs.nix",
-      "sha256": "801a2768fb312aed30442781d18cb2d00e65cc4bfc8da3aa2b5f01b91606fdab",
-      "executable": false
-    },
-    {
-      "path": "checks/minimal-consumer.nix",
-      "sha256": "481a18b22fc026692572349c687717be4e87e75ef7b1017405919ffb16500304",
-      "executable": false
-    },
-    {
-      "path": "docs/migration.md",
-      "sha256": "49706a4a35c6037f093b57190a322e1dc0b7d85098b72182c6607958cc3d7e8b",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/linux/profiles/k3s-cilium.nix",
-      "sha256": "67fc67fd5d7aeb0476170b5e86b03578d6a08e790cfff9752b599f189d96feb5",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/workstation.nix",
-      "sha256": "af5b3f5867631554b5564d49dac8995a10656c9d4ae72f88346da27c20a709d0",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/process.janet",
-      "sha256": "9ad52b360ec9376f6f42f354f4ad211a5ae36c27f59d308ed1536a33087e1430",
-      "executable": false
-    },
-    {
-      "path": "runtime/hey/system.janet",
-      "sha256": "24719c9844089168e34c068651d4ca2f1b2fb539c62d23b818b5e70575855ecc",
-      "executable": false
-    },
-    {
-      "path": "test/hey/system.janet",
-      "sha256": "95174864826ea52bb79146373959c1a64ebead04476c30b0066d5a0fcdfdde0f",
-      "executable": false
-    },
-    {
-      "path": "test_tools/test_cli.py",
-      "sha256": "5ae9c0ee42d2ef7d1bf09a180cc246b88386011af8270eda23520ad84024727b",
-      "executable": false
-    },
-    {
       "path": ".gitignore",
-      "sha256": "303cd19abb2bbfba0b0d3f2a3eecd0a4848fb204363a73b01f29b9ccac2b0fe9",
+      "sha256": "dc7dc41ab49046748426afe5531448f001708280cba7475f37753066de851251",
+      "executable": false
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "e87be31a45a0323133801b67c85836a3764fe13b3c6513c67d9140ca95dc7553",
+      "executable": false
+    },
+    {
+      "path": "NOTICE.md",
+      "sha256": "9c10546eba6fada9574985aa7fa0018200bcd3a26a46d8407ce7165f301de115",
+      "executable": false
+    },
+    {
+      "path": "README.md",
+      "sha256": "f8a5c04203ffe99919338d77e33cea4383c0f2eb2cf7c7332f9027339ebd1d55",
+      "executable": false
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "d0f803855d586b2208134cd9b1b34c86d5cfecf798d0dc57737b15df2702c866",
+      "executable": false
+    },
+    {
+      "path": "assets/agent-memory/package-lock.json",
+      "sha256": "aabc9da28f8ef9f11e12378e4b398a945ad4763e373f7c054913ba47ece564c5",
+      "executable": false
+    },
+    {
+      "path": "assets/agent-memory/package.json",
+      "sha256": "0db36eb78bb753ee143b83c03eda5b3c176cd162b3f47ced4fca1e40535ba59b",
       "executable": false
     },
     {
@@ -794,6 +74,21 @@
     {
       "path": "assets/docker/cli-plugins/.gitkeep",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "assets/doom-minimal/config.el",
+      "sha256": "a4aca2cf2b04c5384d1a2c5fcb022d16151d02c1095cd9ff34d48641b57374e0",
+      "executable": false
+    },
+    {
+      "path": "assets/doom-minimal/init.el",
+      "sha256": "7121d73222be23b51ef7d9d9bd4a17593d3712bf38d22a46c3b22d10db9f8255",
+      "executable": false
+    },
+    {
+      "path": "assets/doom-minimal/packages.el",
+      "sha256": "3fd396674b5d5900b1f0bf11a00bbb1de8ec3110235f10e230b872e64efd5cb2",
       "executable": false
     },
     {
@@ -953,7 +248,7 @@
     },
     {
       "path": "bin/hey.d/doctor.janet",
-      "sha256": "608cef169b7d2bdf4609f5e62c22c759425a8720e8037469c6bc4b766aeb9360",
+      "sha256": "29e7ea5437f98b5728772800e8214198454256a3897d55f0af755a68e7ae1b9e",
       "executable": false
     },
     {
@@ -1022,6 +317,11 @@
       "executable": false
     },
     {
+      "path": "bin/hey.d/security.janet",
+      "sha256": "cdcff12108be22b5255ae515663df16586c10eaf62a2628d0b3a82201299f2bd",
+      "executable": false
+    },
+    {
       "path": "bin/hey.d/ssh.janet",
       "sha256": "7b87778c2a2434adf0450bd721f98e59e0fef84732863bfe32bf562dc491bbab",
       "executable": true
@@ -1033,7 +333,7 @@
     },
     {
       "path": "bin/hey.d/sync.janet",
-      "sha256": "d9b1a60cb362f0759c59f2bb1b52e879b39659bbd1bda0819eaceed2f0f8711e",
+      "sha256": "90828064794756eb3cc2cec6d9a99c103aaa1949f9ac83daba169a1a9928d975",
       "executable": false
     },
     {
@@ -1063,7 +363,7 @@
     },
     {
       "path": "bin/hey.janet",
-      "sha256": "3123d7f7f3cc8c646e75ec3a7e893485a606f3508df2b2ce421031f729a58457",
+      "sha256": "211e8d95d148b335b7e0a3b39d524c3af3c99d3317262e4dd13acbc24ef2bb6d",
       "executable": true
     },
     {
@@ -1072,13 +372,88 @@
       "executable": true
     },
     {
+      "path": "bin/tmuxsel",
+      "sha256": "e4409a44fbf1593ea29511b40fc33e14b0e73079ddf09feb50824849358ec17b",
+      "executable": true
+    },
+    {
+      "path": "checks/README.md",
+      "sha256": "4a7843ad35e6d567f2bbbdc0d938fcefa9bb845f12adb785298cd0a3d4812355",
+      "executable": false
+    },
+    {
       "path": "checks/agent-capability-manifest.nix",
       "sha256": "b606c292b710884cc5f909c37086add4d4b173cc6314ff7b253cc4cb745766de",
       "executable": false
     },
     {
+      "path": "checks/agent-integration.nix",
+      "sha256": "cc75e8b62d5a4583baacfd13cebfd418e01c207ea36a9e89fabe000d81bf49c7",
+      "executable": false
+    },
+    {
+      "path": "checks/agent-memory.nix",
+      "sha256": "b6a740aba4971fb7b4e02bc69d8e4e6055f24226787f322e59c1d3c96a5cf3b9",
+      "executable": false
+    },
+    {
+      "path": "checks/ci-check-plan.nix",
+      "sha256": "682cb8773151b00c8f7099926df3594c9783a4a5b0cf44778bea1a72ff4a5982",
+      "executable": false
+    },
+    {
+      "path": "checks/cli-behavior.nix",
+      "sha256": "547bff108be875c0be7b1f07377579df7865ff73a0608d81c82676bbbf84823f",
+      "executable": false
+    },
+    {
+      "path": "checks/cli-contracts.nix",
+      "sha256": "8b1ff1305e1e595d8f61742bec680f6c98a33f349aa77140959ea90c76639617",
+      "executable": false
+    },
+    {
+      "path": "checks/codex-skills.nix",
+      "sha256": "a480ee193b65970d0e8878948078410fb1fc3fea1e4601e10f5f4d1d866b5b1e",
+      "executable": false
+    },
+    {
+      "path": "checks/dependency-coverage.nix",
+      "sha256": "077988da20af101d78b30874849c9d15be7476ac8f057b98f560b35f0b1870db",
+      "executable": false
+    },
+    {
+      "path": "checks/dependency-overrides.nix",
+      "sha256": "78921dde1d14751cb422ec30549add090f1f68bd84972fd6acd611815218d1a5",
+      "executable": false
+    },
+    {
+      "path": "checks/desktop-policy.nix",
+      "sha256": "60a7a2de4464bf429149007b58d3da3c5e7d3093af189c1de753ade1b0819b2d",
+      "executable": false
+    },
+    {
       "path": "checks/discovered-host-flake.nix",
       "sha256": "f917e48733a0d99366f2966e1edb41585bd6471311c06c1e9211d209564485cf",
+      "executable": false
+    },
+    {
+      "path": "checks/disko-opt-in.nix",
+      "sha256": "4e5ebd5554f8ebcb5c4b3958c755f2f8e4768263ca23df3faab4d51174d5805d",
+      "executable": false
+    },
+    {
+      "path": "checks/doom-extra-config.nix",
+      "sha256": "c545dbd0a2295c66690dc46467168202c235fb5595585a52ec83d6790b37fbd1",
+      "executable": false
+    },
+    {
+      "path": "checks/eks-integration.nix",
+      "sha256": "c2623f69ed7376cb51a44ff6920d57fb5679615d39a9141a340233cb2b67e017",
+      "executable": false
+    },
+    {
+      "path": "checks/emacs-policy.nix",
+      "sha256": "74b0866e9888c22256f5880f6a4230e00021ba7a146268518d862e6554c9c497",
       "executable": false
     },
     {
@@ -1104,6 +479,31 @@
     {
       "path": "checks/fixtures/discovered-host-flake/hosts/fleet/k8s/worker.nix",
       "sha256": "fde09033427db46641ae90377732a47e0261624062dc0660414f9979fec5580c",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/discovery-relative/helper.nix",
+      "sha256": "672411bb682720607090b6331b6d45580696d5c67462f0d4a35498731cb6d366",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/discovery-relative/host-module.nix",
+      "sha256": "f37da1e9eee3606c4d268cc676c1e35f353546fa7e46e1f26916205633a1b0f2",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/discovery-relative/hosts/group/server.nix",
+      "sha256": "c9418a9bfd5db7ef513ee3cdacdf69fbb4bb83432004b997334fa905ee008c68",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/discovery-relative/modules/flat.nix",
+      "sha256": "4d43573dd7d73cbd0d41645f31546b63bf00820493a119c4a9645a9ec03bdfc3",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/discovery-relative/modules/group/nested.nix",
+      "sha256": "dcad51de30668d7d39bbb85e9b2ee66278c35e070c3741b32e1f159d62fbed9d",
       "executable": false
     },
     {
@@ -1217,6 +617,21 @@
       "executable": false
     },
     {
+      "path": "checks/fixtures/map-hosts/_hidden-entry/default.nix",
+      "sha256": "48e804fb3bcbe9add4bf6c0be53ed8915e1b02ae1f966c3763df684767cbda38",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/map-hosts/_hidden-group/leaf.nix",
+      "sha256": "c1ae56952b2bc5436b0240846d9f29922cfb5bb13f1f5d737e819121dba20ab6",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/map-hosts/_hidden.nix",
+      "sha256": "a15c35a9c47d832f78b3b0cec7ba07947cd0fe05f1c726fc01461959603e614f",
+      "executable": false
+    },
+    {
       "path": "checks/fixtures/map-hosts/fleet/k8s/analytics/default.nix",
       "sha256": "4b7108fe3e8a56e9bd79b069637c271e314b007431abcf8a24cbf75079a3fb93",
       "executable": false
@@ -1239,6 +654,31 @@
     {
       "path": "checks/fixtures/map-modules-duplicate/group/default.nix",
       "sha256": "711e36b793892d94473769261cb9a04783c1a228e2303776a1f026fdbc1c84a0",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/map-modules-group-collision/group.nix",
+      "sha256": "22e7397941c11edde5eca0826a8180ecb332150f74fee47b6a3dbc4afb08da52",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/map-modules-group-collision/group/nested.nix",
+      "sha256": "2189d04691e902a2dbfdec95a95475a3cc34d2585ec0453d6ed7709f7a445010",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/map-modules/_hidden-entry/default.nix",
+      "sha256": "211fd76084d63c5a6cfa22fb58f37bcbeb89dd99fab0d5f7cc029f8499d07fc4",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/map-modules/_hidden-group/leaf.nix",
+      "sha256": "aab68501ef5ba973300fb666886184d50fc933ac8ac49d746d1b8df7de15ac59",
+      "executable": false
+    },
+    {
+      "path": "checks/fixtures/map-modules/_hidden.nix",
+      "sha256": "e03ef517f2d195a7f5162c1b4f5968542347105b39321be70505d0d01236c1e0",
       "executable": false
     },
     {
@@ -1347,8 +787,23 @@
       "executable": false
     },
     {
+      "path": "checks/gnupg.nix",
+      "sha256": "b7a6c2b34223c138f0677d6b1d7289ef72115129ffe82f1a23444dbba4c98e10",
+      "executable": false
+    },
+    {
       "path": "checks/home-file-ownership.nix",
       "sha256": "67045f4aa5eda8085085cd87dfc937a49b3760d0b3e4706ebfd6ddf48676e144",
+      "executable": false
+    },
+    {
+      "path": "checks/home-manager-integration.nix",
+      "sha256": "0e459bdb466f0cd04045e93fc985983737874c3195726622b8cdc3819c056966",
+      "executable": false
+    },
+    {
+      "path": "checks/homelab-policy.nix",
+      "sha256": "6238c33ba602f13c614be9b9b5dc60ca2b85bc5386eae24d711e665301abd92f",
       "executable": false
     },
     {
@@ -1392,8 +847,23 @@
       "executable": false
     },
     {
+      "path": "checks/java-policy.nix",
+      "sha256": "e21c61a3bb3aeb443b225eddbb2f48b1f0d1a681401ca6301176ec2c7e9c77b2",
+      "executable": false
+    },
+    {
+      "path": "checks/k3s-addon-manifests.nix",
+      "sha256": "488954dad1bcd6ecbd44196dbb26bb9adee41fa5f6de58e9d3fe608e6e5da768",
+      "executable": false
+    },
+    {
       "path": "checks/k3s-server-arch.nix",
-      "sha256": "729ebd6acee9379268f90f5ff3f8de4b0e4f515f5db42206ebbfe968b8900068",
+      "sha256": "faaf3f111d56fb8666918e6fa854135f3047bd222614f31d71f34141dc0e11ee",
+      "executable": false
+    },
+    {
+      "path": "checks/lazy-outputs.nix",
+      "sha256": "801a2768fb312aed30442781d18cb2d00e65cc4bfc8da3aa2b5f01b91606fdab",
       "executable": false
     },
     {
@@ -1417,6 +887,11 @@
       "executable": false
     },
     {
+      "path": "checks/minimal-consumer.nix",
+      "sha256": "481a18b22fc026692572349c687717be4e87e75ef7b1017405919ffb16500304",
+      "executable": false
+    },
+    {
       "path": "checks/mk-host-flake.nix",
       "sha256": "463a0686b2f4a718921b5ff83b33681f2dccadb82347bf9bbbc60c30cd2b6c45",
       "executable": false
@@ -1427,13 +902,28 @@
       "executable": false
     },
     {
-      "path": "checks/publication-boundary.nix",
-      "sha256": "ec05ba1e7f3e84d34b8bfda5b35187af6c97544c9c9d85e46ad9dd1c74511ff9",
+      "path": "checks/network-service-integration.nix",
+      "sha256": "deb028f2ba0f724565cc059c8413c9dd1a0ac03a28d181fd600fb62b02d80fc3",
       "executable": false
     },
     {
-      "path": "checks/README.md",
-      "sha256": "1921822669d3ac949e6fff9754062a78ecd104cfe3d66f6cdeb07bfe198f1df3",
+      "path": "checks/openvpn-client-boot.nix",
+      "sha256": "c6219e9819772fb0e6a2ae1fd4d2dba3739bad98e4ba346b7d29fd6c06d31a96",
+      "executable": false
+    },
+    {
+      "path": "checks/package-context.nix",
+      "sha256": "b13f726921b2f1fe0ed2a68f4af6360d638f3bf7d422c6ee255f467f75169b4d",
+      "executable": false
+    },
+    {
+      "path": "checks/process-supervisor.nix",
+      "sha256": "fe90a9ab2c2d49fcd00ff569d4585ec708d4ea78371d9ba9c0fba25e623fcd74",
+      "executable": false
+    },
+    {
+      "path": "checks/publication-boundary.nix",
+      "sha256": "ec05ba1e7f3e84d34b8bfda5b35187af6c97544c9c9d85e46ad9dd1c74511ff9",
       "executable": false
     },
     {
@@ -1442,8 +932,63 @@
       "executable": false
     },
     {
+      "path": "checks/runtime-inputs.nix",
+      "sha256": "454424390ff77e89710030253f1ffc34ef62b7038f1d66875d5d13caa1d27770",
+      "executable": false
+    },
+    {
+      "path": "checks/runtime-metadata.nix",
+      "sha256": "c0b4edbc5a79d44d3b9391a0a842a68d6e514bb9802564d911d2466babab37e2",
+      "executable": false
+    },
+    {
+      "path": "checks/runtime-secret-paths.nix",
+      "sha256": "a8aa10c0507b4cef6da755f0b55c0c2270f15076ff805b6b218261e7d6692deb",
+      "executable": false
+    },
+    {
       "path": "checks/secret-provider-boundary.nix",
       "sha256": "f182edd0be0700e9d5df16ac1f7846fa40df1bfc0c2b9ab0ac8a3347c55ac399",
+      "executable": false
+    },
+    {
+      "path": "checks/service-overrides.nix",
+      "sha256": "e32ecd785bff3341a362b479c78afdb1cd8d5408783ec23e510664ddc1cc0d25",
+      "executable": false
+    },
+    {
+      "path": "checks/shell-environment.nix",
+      "sha256": "9b066797292f22e0147b656a5a6d5ef985ff6a4bc957319b821258625d4c0436",
+      "executable": false
+    },
+    {
+      "path": "checks/sops-darwin.nix",
+      "sha256": "0fd1dfa5157b7230d9d8ea0648e1b0222a87f1fb00a960ced8cb69c1e1f9bc65",
+      "executable": false
+    },
+    {
+      "path": "checks/ssh-certificate-boot.nix",
+      "sha256": "a6bf81ed91fba9f8c3506e7983a3099d1817b856cc07bdc37a3bb2d3f22c97e2",
+      "executable": false
+    },
+    {
+      "path": "checks/ssh-certificate-lifecycle.nix",
+      "sha256": "a283f3f2e9e2fa66e77d02098a17fde9743d75a9332472a2d107390c7735d529",
+      "executable": false
+    },
+    {
+      "path": "checks/ssh-certificate-tool.nix",
+      "sha256": "c16a66610ad89a2af1d62e15ded208ae5b4e82fc53ffabc277c88d0e09bd3b9f",
+      "executable": false
+    },
+    {
+      "path": "checks/system-activation-boot.nix",
+      "sha256": "62e1777dfe9b53f18b813ce39079e5ce4ecef40c22db856b15771e8d13c3b776",
+      "executable": false
+    },
+    {
+      "path": "checks/system-activation.nix",
+      "sha256": "876736bab04b148643913d11e52b4c72406cb5fc14698ffa1e61a39e03fc6e78",
       "executable": false
     },
     {
@@ -1457,6 +1002,16 @@
       "executable": false
     },
     {
+      "path": "checks/user-file-installation.nix",
+      "sha256": "2a8437b28954077ef8c00082912f08de354ae53759df5f564002b0565cfc7cc5",
+      "executable": false
+    },
+    {
+      "path": "checks/user-policy.nix",
+      "sha256": "7501981ae9ba62a5fda97061ef1b448922eee6fc93a421fab98b4a112506ce40",
+      "executable": false
+    },
+    {
       "path": "checks/workspace-flake.nix",
       "sha256": "2ba7f724026a7799b08ff260a2f947689361e45462aff8af94e37ee32abdbd81",
       "executable": false
@@ -1464,6 +1019,11 @@
     {
       "path": "checks/workspace-layout.nix",
       "sha256": "27e524d5b3bf021ab2bfb1a1e5383489c2e3383ee755afdc7b210b288d672389",
+      "executable": false
+    },
+    {
+      "path": "checks/zsh-plugins.nix",
+      "sha256": "ef0c35683c41c3e12fa2cd77295aba776c2da2326a8e8904bc76870ad802ead1",
       "executable": false
     },
     {
@@ -1477,8 +1037,18 @@
       "executable": false
     },
     {
+      "path": "docs/agent-memory.md",
+      "sha256": "4fd46119a7e88d93afd0b61421857121180073b90e156b2e1a4685575b02ffcc",
+      "executable": false
+    },
+    {
       "path": "docs/architecture.md",
       "sha256": "4655b236e5992f14ab7c0905b58b3b8e4afa16733d6ceb8202b9d5abbc2aa88a",
+      "executable": false
+    },
+    {
+      "path": "docs/codex-skills.md",
+      "sha256": "e96aca9b69c6007c6fae3e90394aee00bf6c40f2d49df9d7db6fb8af907f8a62",
       "executable": false
     },
     {
@@ -1487,8 +1057,13 @@
       "executable": false
     },
     {
+      "path": "docs/dependencies.md",
+      "sha256": "b7cc52fe7758f8808fca631becb8b491268c1b85a17d184d6af77114228e7f6b",
+      "executable": false
+    },
+    {
       "path": "docs/doom-emacs.md",
-      "sha256": "a675fda71f6bbc085aeb54a1701d95b35e8f4eaa874dd225ebd8ce945ad2cca2",
+      "sha256": "cc66d17d045efc93c1f489bd7e0eb2b8f931885828fa98f79f708848a717e95a",
       "executable": false
     },
     {
@@ -1508,7 +1083,17 @@
     },
     {
       "path": "docs/hey.md",
-      "sha256": "e7a020f758ba3035042d982ef96570537a6c5ae0a9872de3f1e0810a84365794",
+      "sha256": "1e477652d59c7414fcab91ee165dfb4519ae22014716da8fd124584f7e95ded3",
+      "executable": false
+    },
+    {
+      "path": "docs/migration.md",
+      "sha256": "4ceba986ab880624cf1181c09e90996852157ded3a748615051ecf0efb301e23",
+      "executable": false
+    },
+    {
+      "path": "docs/omp.md",
+      "sha256": "7146bf43dac46eaea17a9959f7a9269ed3bc16526a06313fa992a0a1086306f2",
       "executable": false
     },
     {
@@ -1518,12 +1103,17 @@
     },
     {
       "path": "docs/secrets.md",
-      "sha256": "a65e042d6c15b63719a306f681a48a5d53bede3073b5d57f854eeee5778d385f",
+      "sha256": "607b1bfd597e93c45af5abbc328cc39ef6bfdac75d2359d3c0f30418d3b60ed8",
+      "executable": false
+    },
+    {
+      "path": "docs/security.md",
+      "sha256": "1755c399370a2831cad5c9b6e394cbb1645a5f6ffa1906428b2f030a0a7b487a",
       "executable": false
     },
     {
       "path": "docs/ssh.md",
-      "sha256": "a50a8221fb2bab9e864766adaca75cb2d8c95593caa01ff167455725195510e7",
+      "sha256": "777892a96438be617818836fffb9c3793adc007ace48cc3cc678b91d5811f545",
       "executable": false
     },
     {
@@ -1548,12 +1138,17 @@
     },
     {
       "path": "flake.lock",
-      "sha256": "aa3eaac87a9c23ffc9efc6c22714190fa030f0584980341fdb762676018a0739",
+      "sha256": "45c7ecd5cd11e2c92b47c60a4ef4a2611410d736bc81a8e57accb153851f3ebb",
       "executable": false
     },
     {
       "path": "flake.nix",
       "sha256": "aae7969ee010654f45d800edae0773fd838cea89dd70b0419b9bb84f4d457707",
+      "executable": false
+    },
+    {
+      "path": "lib/README.md",
+      "sha256": "343259443122acef9dcbaefd947db297bfdd7f3482bcdac15ffc0aa8e8decf4b",
       "executable": false
     },
     {
@@ -1579,6 +1174,36 @@
     {
       "path": "lib/hostlib.nix",
       "sha256": "502d7f831b964244ec9424b2c1c33c8225a8ae048737adf09c138cac18522b1b",
+      "executable": false
+    },
+    {
+      "path": "lib/internal/addon-pins.nix",
+      "sha256": "5241369b978b7dc0ce8e4b1099bdcec56af6f18df248f81aeff760991c318fda",
+      "executable": false
+    },
+    {
+      "path": "lib/internal/aws-ini.nix",
+      "sha256": "799cd228f2f9215574c37bd369f1013df14e497bf627f5f3da3dc210128e995c",
+      "executable": false
+    },
+    {
+      "path": "lib/internal/compose-doom-dir.nix",
+      "sha256": "11af78246903f8a264433d1a246e6d50c6e21783d0ed02f648be5cae6f4529f0",
+      "executable": false
+    },
+    {
+      "path": "lib/internal/file-contracts.nix",
+      "sha256": "1c20092c5fe5c710dbd9c5a862ade8380a8404d2edbc7546d584b4b83537bd78",
+      "executable": false
+    },
+    {
+      "path": "lib/internal/ssh-config.nix",
+      "sha256": "debf337311af71b0feb9e9a7939444c6c9c96e33dda7cfc36f0afcedf31a0c28",
+      "executable": false
+    },
+    {
+      "path": "lib/internal/zsh-cache-files.nix",
+      "sha256": "3e2b80aa2b77bdb2c6ea90e4e5d9a3998ccb18056a848c4f768f5b2103f7c638",
       "executable": false
     },
     {
@@ -1612,13 +1237,8 @@
       "executable": false
     },
     {
-      "path": "lib/README.md",
-      "sha256": "343259443122acef9dcbaefd947db297bfdd7f3482bcdac15ffc0aa8e8decf4b",
-      "executable": false
-    },
-    {
-      "path": "LICENSE",
-      "sha256": "e87be31a45a0323133801b67c85836a3764fe13b3c6513c67d9140ca95dc7553",
+      "path": "licenses/gnu-emacs.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
       "executable": false
     },
     {
@@ -1647,6 +1267,26 @@
       "executable": false
     },
     {
+      "path": "modules/README.md",
+      "sha256": "2d400e9447862cafb132ba3bd3f4d2022fb1cdfeb91b1b79bd6749e1be23aa2e",
+      "executable": false
+    },
+    {
+      "path": "modules/optional/disko.nix",
+      "sha256": "ae56ba7fc330c1cf9e61032f744b1b07cca550f31b0bf71e2b6190a592b3a238",
+      "executable": false
+    },
+    {
+      "path": "modules/optional/sops-darwin.nix",
+      "sha256": "0ddd5db7c259fee025257ba76db494cef67baf25562557e88778462e85fa11ba",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/README.md",
+      "sha256": "455be6b15a837c4fddebaa664787a186b647127d89bb02f672a92f8d73c246c1",
+      "executable": false
+    },
+    {
       "path": "modules/platform/darwin/desktop/default.nix",
       "sha256": "8635258e99e2e5db96ecdf5b34165e17db67af6fad4ba275e36a471f5ac3650f",
       "executable": false
@@ -1663,7 +1303,12 @@
     },
     {
       "path": "modules/platform/darwin/hey.nix",
-      "sha256": "8d80236a32ff5fe9f64bee871cf6a2c74061c46b622ca786a1d4e9ca6b613c21",
+      "sha256": "a117dc4d4984fa4996a40cf5884a6c7dcfd09e6a028f4287e30ed12dfaba97f9",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/darwin/profiles/tmux-workstation.nix",
+      "sha256": "4eee4b5de4f130f49e2cb32270e1e46737963163266cd1ecca1c52630f15f1cb",
       "executable": false
     },
     {
@@ -1677,13 +1322,13 @@
       "executable": false
     },
     {
-      "path": "modules/platform/darwin/shell/direnv.nix",
-      "sha256": "5f2f56700a42240b695f7541dc0c9805bd6a00cc0a95426de2e14ac1de82a43d",
+      "path": "modules/platform/darwin/services/ssh-user-certificates.nix",
+      "sha256": "e7b195a4866cb7ac2b0d94c96418fd9f94d5bd6d651898520354d36c378ea9d1",
       "executable": false
     },
     {
-      "path": "modules/platform/darwin/profiles/tmux-workstation.nix",
-      "sha256": "4eee4b5de4f130f49e2cb32270e1e46737963163266cd1ecca1c52630f15f1cb",
+      "path": "modules/platform/darwin/shell/direnv.nix",
+      "sha256": "5f2f56700a42240b695f7541dc0c9805bd6a00cc0a95426de2e14ac1de82a43d",
       "executable": false
     },
     {
@@ -1697,8 +1342,23 @@
       "executable": false
     },
     {
+      "path": "modules/platform/linux/profiles/administrator.nix",
+      "sha256": "b7a8e29524819946b36bb9282e6a90205f6c028a05706f80606dafa9aaa5ab77",
+      "executable": false
+    },
+    {
       "path": "modules/platform/linux/profiles/eks-bastion.nix",
-      "sha256": "91add50edbe22dd6736751c5d99914020cbbfe5a0b718596936d5acc2460b50a",
+      "sha256": "ee433bc9637e9bdb26832f60f8cb67193c1a91386c3cc9091a08573ac2744ec5",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/linux/profiles/gitea-compatibility.nix",
+      "sha256": "c63fde71953cf7a586f73c921a958ffb0d372961c8d24680beaab234657e2638",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/linux/profiles/gitea-tailscale.nix",
+      "sha256": "827da0a98227649d6204f62c3e84d1a67bc6f667e20ec20e8d4ed6679fdb921a",
       "executable": false
     },
     {
@@ -1713,12 +1373,12 @@
     },
     {
       "path": "modules/platform/linux/profiles/homelab-k3s-agent.nix",
-      "sha256": "72dd305a4e24281b47f6f89f59a4f5f679f374e8e6c399d83a1adb883b8262a4",
+      "sha256": "f04233b3fbf9f5ec2791b711ba21a718ba5bee3f128458835d80b05a28b36cf9",
       "executable": false
     },
     {
       "path": "modules/platform/linux/profiles/homelab-k3s-server.nix",
-      "sha256": "159530242e0a1c879029b41cdd18d23b56ab0d179f23b2d65b83d8afcafa83fa",
+      "sha256": "7df4bcef3de673a1606d8786b1bf7ff2be858ce962c321fd82f995847d686856",
       "executable": false
     },
     {
@@ -1732,8 +1392,23 @@
       "executable": false
     },
     {
+      "path": "modules/platform/linux/profiles/k3s-cilium.nix",
+      "sha256": "55bf91d1ab751cd8a0d6545bf3c054434c132ed1aac3cd478410fa37414c3635",
+      "executable": false
+    },
+    {
       "path": "modules/platform/linux/profiles/platform/cilium-vm.nix",
       "sha256": "649d71fe647850b111949841ff07ae732af27e2ad3914172b546027fa461579d",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/linux/profiles/secure-ssh.nix",
+      "sha256": "84ac1cd5f4350877ca744fc24a6912c664e5655cdc4f1e1c217cbe8c78f51685",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/linux/profiles/tmux-workstation.nix",
+      "sha256": "13fef7a98f06e29821a9df8972f1b45ccd328eeeb77ace1a12c21195e76b5343",
       "executable": false
     },
     {
@@ -1747,18 +1422,28 @@
       "executable": false
     },
     {
+      "path": "modules/platform/linux/profiles/workstation.nix",
+      "sha256": "40abd467b6d942dd0112af6a642f80b06a99d380342a515efb8578350ea236a3",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/linux/profiles/zsh-workstation.nix",
+      "sha256": "9ac72b8849d6edbc9b81a17c3547c070e1c5349e2884bc5d0ef896632e56bd5b",
+      "executable": false
+    },
+    {
       "path": "modules/platform/linux/services/caddy.nix",
-      "sha256": "d9716979f0955dba3ba9ef8c362ec236a0da13a764fef0444a96aa51a14bc5d8",
+      "sha256": "47501ba60a1864a93a8963ce26c5cbc0916b34a59f90f4ee1e9942c85529aab8",
       "executable": false
     },
     {
       "path": "modules/platform/linux/services/docker.nix",
-      "sha256": "0fce4b863fa07be43ee4513ee1f25fd9d816779fbc38891b49499c007902af58",
+      "sha256": "64e66a88593a6b54303c372a2f03cff31a15b9f40e0ff21507264f03052bebcc",
       "executable": false
     },
     {
       "path": "modules/platform/linux/services/gitea.nix",
-      "sha256": "bb1978505f8a5a90b87e0326fd4794ae9f60fda067c444109ec9e1c7cc2176fc",
+      "sha256": "b5f2071a0a4e4244be49b9e7fb29e7463426a5e1140910e31b01fa36a20d8a65",
       "executable": false
     },
     {
@@ -1768,12 +1453,17 @@
     },
     {
       "path": "modules/platform/linux/services/k3s-agent.nix",
-      "sha256": "8412ff8d213f330dbc6ad20542f0b6d52a6acde866289ebccb7cf12996a8aa05",
+      "sha256": "946b53d4904a47ad27319b35d5abceb1972a9af86835c58a7c945331d7dfebfd",
       "executable": false
     },
     {
       "path": "modules/platform/linux/services/k3s-server.nix",
-      "sha256": "00a8050ade79da2a68e6d13f2a7df69c032714020a62cd1ad2e982609f68375b",
+      "sha256": "0002072fc243d0c0e2a2ec697ceb073e98008f6e176806e216a751e7cf754044",
+      "executable": false
+    },
+    {
+      "path": "modules/platform/linux/services/ssh-user-certificates.nix",
+      "sha256": "401ccc56bb06f2e186ab65c5bbabad34bdf3c237728c22f8bb6cce413505043b",
       "executable": false
     },
     {
@@ -1797,33 +1487,13 @@
       "executable": false
     },
     {
-      "path": "modules/platform/linux/profiles/tmux-workstation.nix",
-      "sha256": "13fef7a98f06e29821a9df8972f1b45ccd328eeeb77ace1a12c21195e76b5343",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/linux/profiles/zsh-workstation.nix",
-      "sha256": "9ac72b8849d6edbc9b81a17c3547c070e1c5349e2884bc5d0ef896632e56bd5b",
-      "executable": false
-    },
-    {
-      "path": "modules/platform/README.md",
-      "sha256": "455be6b15a837c4fddebaa664787a186b647127d89bb02f672a92f8d73c246c1",
-      "executable": false
-    },
-    {
-      "path": "modules/README.md",
-      "sha256": "aa46b6001cce148e9791697c9444a2846b041ee102cc248fdc7f300b927d2ed1",
-      "executable": false
-    },
-    {
       "path": "modules/shared/agents/codegraph.nix",
       "sha256": "a908aa65c92b19efc34671ebe53747e8349fedc4cd8cd02ddd9cea27c72536df",
       "executable": false
     },
     {
       "path": "modules/shared/agents/codex.nix",
-      "sha256": "1e81a16b1f123636d189b72bfefdb2733b11060297bfce83c769f0b5e9913c45",
+      "sha256": "945f6edd5093ba2004d1e5cc9993a74520c25f160d022a0b260e755c6807bf62",
       "executable": false
     },
     {
@@ -1837,8 +1507,13 @@
       "executable": false
     },
     {
+      "path": "modules/shared/agents/memory.nix",
+      "sha256": "01b39f3baea74732550630d25a03932753b320b3c6f401eb7619f3bacc486098",
+      "executable": false
+    },
+    {
       "path": "modules/shared/agents/omp.nix",
-      "sha256": "5ed5f597888802f7cbd7db0e672a7dae9f993d3af2dcc09ce039da72c9b738ae",
+      "sha256": "8f1f4ff26159e6831dd536721d924849ca3f41ceec557489a1ad5e9df5fc18bf",
       "executable": false
     },
     {
@@ -1852,13 +1527,18 @@
       "executable": false
     },
     {
+      "path": "modules/shared/dev/java/_common.nix",
+      "sha256": "eb0853a7bc0ca855f50cf6594a9af8c03c64fe9733cc1f8f413267f2d1e4c29d",
+      "executable": false
+    },
+    {
       "path": "modules/shared/dev/java/openjdk21.nix",
-      "sha256": "193560c647aab62a14f8ba410c4378f7cda777563b9b2700f170ec4446e1fd47",
+      "sha256": "cf296bf19aa5d750fb61f2c565053e4bb13eb292b034c750b3a3c0bb24455031",
       "executable": false
     },
     {
       "path": "modules/shared/dev/java/openjdk25.nix",
-      "sha256": "7f936bb038c10764045c4cc6d067f74ea57bb676620117e99143d7a49d7ff68b",
+      "sha256": "cf296bf19aa5d750fb61f2c565053e4bb13eb292b034c750b3a3c0bb24455031",
       "executable": false
     },
     {
@@ -1873,7 +1553,7 @@
     },
     {
       "path": "modules/shared/editors/emacs.nix",
-      "sha256": "b0f4e960526f59b001307613e9e5ec8a6b7414bb208a87751e278809f5c54548",
+      "sha256": "dfd8c31c07b5de853b9aef261a9d54b55898c558361b0568db1576f7e70b31ab",
       "executable": false
     },
     {
@@ -1897,8 +1577,73 @@
       "executable": false
     },
     {
+      "path": "modules/shared/profiles/alacritty-workstation.nix",
+      "sha256": "3ad69dcc8f273f23d345dc2eb6e8e36faf98da07a87a9571292d1e19b1d8f7ef",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/atuin-workstation.nix",
+      "sha256": "0c27e98dcbad87b345aac5295f29b2c9efe1020df5ca6520caa565a4f03c205b",
+      "executable": false
+    },
+    {
       "path": "modules/shared/profiles/default.nix",
-      "sha256": "5e23315192c339063b08881099250a5cf55a79c0afcdb12cd057b3125994ef54",
+      "sha256": "584b337718347f03e281cada536f0265c6691d675a321885c42fe47cbece42e0",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/doom-workstation.nix",
+      "sha256": "e966d8f5093efa378d36bdb7af1da0fa58ef5e8fbdc1bc76a2e9109640969ca8",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/go-workstation.nix",
+      "sha256": "e9a3c092cf3e5514c92f19f858e74c2564e34edc5b202be55a0b1faf731a9792",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/home-workstation.nix",
+      "sha256": "6312379a74c98ba677856ce19b9aa3997e7f9632959dbfe8aa46407667aa1d56",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/java-workstation.nix",
+      "sha256": "64ec63e6140a1b22955d7d3c49f231d702fa2be5feb8d4cde7ae6bc7edb6b801",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/omp-workstation.nix",
+      "sha256": "4a996dd3d0e89188d3795014dd1b46c55ebd20b0e9f22f2ab611280e3b4ca780",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/rust-workstation.nix",
+      "sha256": "e27b55fb4b1d88bc160fbf9a27b51465ff0ef6a8c9f5617c7d3a498dabe20d8f",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/tmux-workstation.nix",
+      "sha256": "f2ec839383984160e688f05fda644c65e74e7bf040e945327ff0e8b98d184fb5",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/vim-workstation.nix",
+      "sha256": "004cce2a2a04de626dd89ee3dadbe7e4419c6e0c9148be41cc5e2ec44108e124",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/workstation.nix",
+      "sha256": "af5b3f5867631554b5564d49dac8995a10656c9d4ae72f88346da27c20a709d0",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/zed-workstation.nix",
+      "sha256": "2cfd4517bbb83909be6240e94a520ba88ded5b6576290cabcec1e1a738b9c019",
+      "executable": false
+    },
+    {
+      "path": "modules/shared/profiles/zsh-workstation.nix",
+      "sha256": "ede0ab75b849fbddcb9e6e40a1affb019855167d6458aa05312180a8f75c5a75",
       "executable": false
     },
     {
@@ -1908,7 +1653,7 @@
     },
     {
       "path": "modules/shared/shell/alacritty.nix",
-      "sha256": "c87877955d1beeba32a3fbe0b988cdf03a0d28210396729ba6d7ccc9d74a8bec",
+      "sha256": "40f7cb5b09897aa1525f65d41473baa3c5e60ed81964b7c4f3ae0a7b1a2baddd",
       "executable": false
     },
     {
@@ -1918,7 +1663,7 @@
     },
     {
       "path": "modules/shared/shell/awscli2.nix",
-      "sha256": "c41f7e261efcab73ec1ae397299139a860d1c6f9453a1f3248e8404b88993c70",
+      "sha256": "83fd873c40f06ddbb85e3a66ffb51a89e2b82873c55347e4b4cfbab063903170",
       "executable": false
     },
     {
@@ -1928,7 +1673,7 @@
     },
     {
       "path": "modules/shared/shell/git.nix",
-      "sha256": "fcea424baaf2e6d0a533cc62099df75532a43874c37080ce5a35e25e969250fe",
+      "sha256": "4ad16d9a7b9ddfc19ec79310244f78b6713d8596e1fb08142be32a05ef9238ee",
       "executable": false
     },
     {
@@ -1947,13 +1692,13 @@
       "executable": false
     },
     {
-      "path": "modules/shared/themes/alucard/config/tmux.conf",
-      "sha256": "fb93058f139c309c9b182b678b6147f7efd72e5d821f3cd37ac073c7f3ccb657",
+      "path": "modules/shared/themes/alucard/config/Xresources",
+      "sha256": "1a5b20d9f10a18eb8fd34a467d40737ece154bd21e3331203491a349daa9275a",
       "executable": false
     },
     {
-      "path": "modules/shared/themes/alucard/config/Xresources",
-      "sha256": "1a5b20d9f10a18eb8fd34a467d40737ece154bd21e3331203491a349daa9275a",
+      "path": "modules/shared/themes/alucard/config/tmux.conf",
+      "sha256": "fb93058f139c309c9b182b678b6147f7efd72e5d821f3cd37ac073c7f3ccb657",
       "executable": false
     },
     {
@@ -1987,18 +1732,38 @@
       "executable": false
     },
     {
-      "path": "NOTICE.md",
-      "sha256": "21c0b8f92de399325b1c3e0fb7dd064cb9f2c89057cac6869ec8ebe3d45673e7",
-      "executable": false
-    },
-    {
       "path": "overlays/README.md",
       "sha256": "6a5be88ae66030b73707c1d88017de28b062d39e97cb8c6f83173c02686d4f49",
       "executable": false
     },
     {
+      "path": "overlays/security.nix",
+      "sha256": "e4aa552b2d73798bfca9d38904dd9f1bc4a6236a0b44689ce716806cc6f43a67",
+      "executable": false
+    },
+    {
+      "path": "packages/agent-memory.nix",
+      "sha256": "eeda0e25558933499933e96b394557afc1aec3b73949dfe5a9effaac0fada18c",
+      "executable": false
+    },
+    {
       "path": "packages/codegraph.nix",
       "sha256": "939a8bd2b20366845f9b440982bcec4b854a7aaa14a2b63b9d73ef6e269f6d6f",
+      "executable": false
+    },
+    {
+      "path": "packages/emacs-gnutls-literal-trustfiles.patch",
+      "sha256": "5b6de7b5567dfeb38486b48d12a932a74f861de4da4d55e63fd37989faf21f8a",
+      "executable": false
+    },
+    {
+      "path": "packages/emacs-tramp-user-full-match.patch",
+      "sha256": "a3373a7c91ab92a8e557a87848b0bf66e3806b0188c15106b08718aa752ddc85",
+      "executable": false
+    },
+    {
+      "path": "packages/flymake-trusted-backends.patch",
+      "sha256": "20f8feeb9f28a77c570d7c2909f2ac28e01c17f7cb443e68ff329e1ebb4d07be",
       "executable": false
     },
     {
@@ -2012,8 +1777,48 @@
       "executable": false
     },
     {
+      "path": "packages/hey-python.nix",
+      "sha256": "68dbee9da9a7c0520db3d6539d286e137fa84481e3c166d5d4cc1e3fe997158e",
+      "executable": false
+    },
+    {
       "path": "packages/hey.nix",
-      "sha256": "8d71181393de47f696ab07f2b53e97150a5169c55a5d34f2819467db9254891b",
+      "sha256": "c0693f97370c8990a5ed87793bc48f0ae7ec6b18939b57b80361e958f32ef620",
+      "executable": false
+    },
+    {
+      "path": "packages/humanizer.nix",
+      "sha256": "bb271ff4be5823a37b5a3f8f64ded61ac0517fe6994809a3dacd6ccd2e6ca844",
+      "executable": false
+    },
+    {
+      "path": "packages/install-user-file.nix",
+      "sha256": "b55c89ce6682c23ac1da77b777f3f9557b88a290de45a859205fa8a223dcd117",
+      "executable": false
+    },
+    {
+      "path": "packages/process-supervisor.nix",
+      "sha256": "8b7c2d0885a520c18a1b48ecb39e96a61935a51cb904139044cdb8d65986ec87",
+      "executable": false
+    },
+    {
+      "path": "packages/ssh-certificate.nix",
+      "sha256": "80e415264c202f363b2a793502f832af2354d1c2f14c3efc0c15dd7f1073b2a7",
+      "executable": false
+    },
+    {
+      "path": "packages/system-activation.nix",
+      "sha256": "5d9b0a3185a33f2f296170b45d2efdd55fd43ee3cecc23faa7f5c60718e0ac8a",
+      "executable": false
+    },
+    {
+      "path": "packages/taste-skill.nix",
+      "sha256": "618d00ca4e3e2faf7120e65ffd627d6366afc9dfc6c566447469ca3a71f08779",
+      "executable": false
+    },
+    {
+      "path": "packages/tencent-memory-core.nix",
+      "sha256": "f844199c05968d7622a960f85c1748f11de2e5e18ee5a6d85eb0baadfc5317ff",
       "executable": false
     },
     {
@@ -2022,23 +1827,68 @@
       "executable": false
     },
     {
+      "path": "packages/tmuxsel.nix",
+      "sha256": "0fcbd5ddc16028b1b07122566f14ba2dbd7c13d34465b8b42f69af6b46d985c2",
+      "executable": false
+    },
+    {
       "path": "project.janet",
       "sha256": "f43250242344129ab4f229b8eb9ddfbb5c13cc8a316f63efad223ba20a287b3b",
       "executable": false
     },
     {
-      "path": "README.md",
-      "sha256": "f8a5c04203ffe99919338d77e33cea4383c0f2eb2cf7c7332f9027339ebd1d55",
+      "path": "runtime/hey/check-definitions.nix",
+      "sha256": "d42a5235330f5c9d02404264d97e87e1951e8b2e3f52675c4a86bc95bbec0886",
       "executable": false
     },
     {
       "path": "runtime/hey/cmd.janet",
-      "sha256": "2fe74badb0ae2890c2bd5b727291aea7c88251ae8e3fc2b48ca8f6ac985895ff",
+      "sha256": "320aad0762881ab49f4e7f09d94de7db7ead245e65294c004f7e12852db7c25f",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/eks/auth.janet",
+      "sha256": "9031a3778b8e84a733c036bb620d8f9a362596de02d20ef07ee75de77bec814f",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/eks/common.janet",
+      "sha256": "4a606b218ebac13206e51297e95ee9e6c771acb523732dac176d8c3af883563f",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/eks/credentials.janet",
+      "sha256": "03a82b70672dc8b36d666ab88fdc44a364cce564f2418d426da4604f0b9f61e4",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/eks/diagnostics.janet",
+      "sha256": "f7d1d318fa8cdb27b1cff23163cbbb28d109070410043d961d80304bf208020b",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/eks/transport.janet",
+      "sha256": "92072d30e8743e21e2fe9d5235c5ff0f36f6cf409afae20fd7b595cac3d03414",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/flake-outputs.nix",
+      "sha256": "06bf11f18c04124e06f57c65ecbe3c22599c84349a67b0f3592bbca4f9d0569d",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/generation-policy.janet",
+      "sha256": "051c4bac336c75035181f0c1f11bdb1f3f4ca0126c438a1a1b2bcfa8e72092af",
       "executable": false
     },
     {
       "path": "runtime/hey/glob.janet",
       "sha256": "b61f0ce1fd7ee8ab84e00dba9c952f4019601e6a3277a65fc22cdaa82ad14225",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/host-info.nix",
+      "sha256": "ac732eb05924904b636b74e6212366abd098e5f54d079934aab352ac4626c71c",
       "executable": false
     },
     {
@@ -2048,12 +1898,22 @@
     },
     {
       "path": "runtime/hey/init.janet",
-      "sha256": "08e9e44a5095ca4da88b319d7da5f43a2b0bc0b20efb3841d92406d34e6bd488",
+      "sha256": "fbb6e7f29fa1bfa64672bafaaf679e7b71ec6c4b3deec6ab6ae4ce78a4326b08",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/input.janet",
+      "sha256": "5c9aad48acdc5c895156aa15da832fa9ee1ec60643083e76787d09033acdc164",
       "executable": false
     },
     {
       "path": "runtime/hey/lib.janet",
-      "sha256": "1a8c6f6ac0cce7e15b26490c91ba29bce0f5e9ffe83e3b5c05edf698e3af187e",
+      "sha256": "a9a52c01693886a26afe71e48cad42fc1553a570ad89862bc4c087ae82c4042e",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/lock.janet",
+      "sha256": "7cfd64db2d5d4771b998ce6f596f23f3a40944e983c9dce31ce5015c48ff2401",
       "executable": false
     },
     {
@@ -2062,8 +1922,28 @@
       "executable": false
     },
     {
+      "path": "runtime/hey/process-table.janet",
+      "sha256": "008390363bdf2282f58812a3b06b307b00e7945582a334317eb2a39724840c51",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/process.janet",
+      "sha256": "9ad52b360ec9376f6f42f354f4ad211a5ae36c27f59d308ed1536a33087e1430",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/ssh-policy.sh",
+      "sha256": "e1ea2d7a857bdb39c6227ef0952e3b9fd4860e73f5f9eaa71fb37ceac31439da",
+      "executable": false
+    },
+    {
       "path": "runtime/hey/ssh.janet",
       "sha256": "8cdae86065fb1434df8dc89ea864677b5df9f9aa8376c8f007a0983ec4da64f5",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/subprocess.janet",
+      "sha256": "a314040dec644677af3d273ad8806188da510443ce2b197ece3cb51ea3a155f4",
       "executable": false
     },
     {
@@ -2072,8 +1952,18 @@
       "executable": false
     },
     {
+      "path": "runtime/hey/system.janet",
+      "sha256": "24719c9844089168e34c068651d4ca2f1b2fb539c62d23b818b5e70575855ecc",
+      "executable": false
+    },
+    {
       "path": "runtime/hey/vars.janet",
       "sha256": "8cf1204951adb84832c981b5a4dcf3afb79cfa31dceb5f4406597aaf819aa1c0",
+      "executable": false
+    },
+    {
+      "path": "runtime/hey/vm-policy.janet",
+      "sha256": "9453ef82a47e547375f04a5a051f71ecaf45134f0d3be3b01d31d88dd810f289",
       "executable": false
     },
     {
@@ -2127,6 +2017,36 @@
       "executable": false
     },
     {
+      "path": "security/core-runtime-review.nix",
+      "sha256": "5313dc75bd59a196dd7b7409d74373b5fe1a05456506130fc55d0cd5a526886b",
+      "executable": false
+    },
+    {
+      "path": "security/dependency-coverage.json",
+      "sha256": "9154da8fc6270b9afb4b5c256c8f6fba1e9ef75959b5eacdf1dcabfa5e72960e",
+      "executable": false
+    },
+    {
+      "path": "security/dependency-targets.nix",
+      "sha256": "9f2ebea72786637cf8a505a9e78700632f8dd9c179a23ccaf93b614bd33ec53d",
+      "executable": false
+    },
+    {
+      "path": "security/emacs-source-review.nix",
+      "sha256": "e740a8405779a1cbff4ef8e22ff22bafc48c6afd1d5fc33284a2f43495434052",
+      "executable": false
+    },
+    {
+      "path": "security/overrides.json",
+      "sha256": "78c448a07b316b6163321d5041e372a9b5fc794cdc491c803cdbe0426995198d",
+      "executable": false
+    },
+    {
+      "path": "security/review-emacs-patches.py",
+      "sha256": "36e38c2eb046c855681fbb8f4c050d3b064d89761ccd2e99424126b4e35b17de",
+      "executable": false
+    },
+    {
       "path": "templates/default.nix",
       "sha256": "ae47b04c5c46f9c5b592dfd1f1578de690968715d21da3f146730a747be26898",
       "executable": false
@@ -2167,13 +2087,13 @@
       "executable": false
     },
     {
-      "path": "templates/go/main_test.go",
-      "sha256": "3d46df4b6513899eecff528918852a08a9c72aa00cb79e7d914a3de0ce9c20fc",
+      "path": "templates/go/main.go",
+      "sha256": "27a5325e539f64f5757bb68412f9ae58c10d465855b796c88752db3bf423e79c",
       "executable": false
     },
     {
-      "path": "templates/go/main.go",
-      "sha256": "27a5325e539f64f5757bb68412f9ae58c10d465855b796c88752db3bf423e79c",
+      "path": "templates/go/main_test.go",
+      "sha256": "3d46df4b6513899eecff528918852a08a9c72aa00cb79e7d914a3de0ce9c20fc",
       "executable": false
     },
     {
@@ -2237,6 +2157,16 @@
       "executable": false
     },
     {
+      "path": "templates/practice/Makefile",
+      "sha256": "fdc9eca06778ba1dc216612a99805b369cf9f6d36e4cf9dacba70d891ac61d70",
+      "executable": false
+    },
+    {
+      "path": "templates/practice/README.md",
+      "sha256": "f23a5982f234244d7b8849561e1c5fc189cb819755f93fb6e8b1951905f22848",
+      "executable": false
+    },
+    {
       "path": "templates/practice/flake.nix",
       "sha256": "71d73ea0845d9e3b35f7ab4e9dbc5a2af521f44fa047538d885489fd49706ebc",
       "executable": false
@@ -2247,13 +2177,13 @@
       "executable": false
     },
     {
-      "path": "templates/practice/go/solution_test.go",
-      "sha256": "8135506de903965da78fec04a763d4e4b2b1a5ab342e2c62543e8f729553a9b0",
+      "path": "templates/practice/go/solution.go",
+      "sha256": "1c45f2c21ef18c387f9d613367909b2d5225415a05735107fa629ae848e3d374",
       "executable": false
     },
     {
-      "path": "templates/practice/go/solution.go",
-      "sha256": "1c45f2c21ef18c387f9d613367909b2d5225415a05735107fa629ae848e3d374",
+      "path": "templates/practice/go/solution_test.go",
+      "sha256": "8135506de903965da78fec04a763d4e4b2b1a5ab342e2c62543e8f729553a9b0",
       "executable": false
     },
     {
@@ -2277,18 +2207,8 @@
       "executable": false
     },
     {
-      "path": "templates/practice/Makefile",
-      "sha256": "fdc9eca06778ba1dc216612a99805b369cf9f6d36e4cf9dacba70d891ac61d70",
-      "executable": false
-    },
-    {
       "path": "templates/practice/process-compose.yaml",
       "sha256": "c836de37cfb9cc547bd18ee6931087371626d1e6b68b1cffc52c0bbcb198f875",
-      "executable": false
-    },
-    {
-      "path": "templates/practice/README.md",
-      "sha256": "f23a5982f234244d7b8849561e1c5fc189cb819755f93fb6e8b1951905f22848",
       "executable": false
     },
     {
@@ -2322,13 +2242,13 @@
       "executable": false
     },
     {
-      "path": "templates/rust/bacon.toml",
-      "sha256": "6d0eee3078458e78d8631c9ce48319b5793ba473c1fc873c98d9ab49eeaaedcf",
+      "path": "templates/rust/Cargo.toml",
+      "sha256": "2d7ee1691227ca794e2a5ce881707aa406e6e50d112bf05f459863b56495a174",
       "executable": false
     },
     {
-      "path": "templates/rust/Cargo.toml",
-      "sha256": "2d7ee1691227ca794e2a5ce881707aa406e6e50d112bf05f459863b56495a174",
+      "path": "templates/rust/bacon.toml",
+      "sha256": "6d0eee3078458e78d8631c9ce48319b5793ba473c1fc873c98d9ab49eeaaedcf",
       "executable": false
     },
     {
@@ -2367,6 +2287,31 @@
       "executable": false
     },
     {
+      "path": "test/cli/generic.janet",
+      "sha256": "25ab7cf0ece9b1fca09e87f1d1c354fdb84ca5f8fd76b83acef3134b95c19c3d",
+      "executable": false
+    },
+    {
+      "path": "test/cli/support.janet",
+      "sha256": "db9bd168dddaed4f5a1b1a900c677f5f8bf652f887f05fdae5126b32c03610db",
+      "executable": false
+    },
+    {
+      "path": "test/cli/unit.janet",
+      "sha256": "94972af11baae327710e4119169054544b71ca0607de72b01d58488a58e2e7d8",
+      "executable": false
+    },
+    {
+      "path": "test/cli/utm.janet",
+      "sha256": "27114297f3ebcebc73371ea136dfcae12641e10b42cd98e93d8a3ca4b12a33fc",
+      "executable": false
+    },
+    {
+      "path": "test/hey/generation-policy.janet",
+      "sha256": "e10ae9cd2a424e821c02d4e26a27a87e9daf81f40bc7563bc0b6a20ba6c03ad2",
+      "executable": false
+    },
+    {
       "path": "test/hey/glob.janet",
       "sha256": "2896e3ca733022570c7b1860540c50cc6c6f29fb0407de67a9fbac03b4cffa5c",
       "executable": false
@@ -2379,6 +2324,11 @@
     {
       "path": "test/hey/lib.janet",
       "sha256": "674abddf1f16c8ce19bee8554692b03be5f1b0db22f4182160e865375d93309d",
+      "executable": false
+    },
+    {
+      "path": "test/hey/lock.janet",
+      "sha256": "ddc529a51041f7742ecfcb6dcb2c340f0cb53b118baf8ea9f8938731c312e93e",
       "executable": false
     },
     {
@@ -2407,6 +2357,21 @@
       "executable": false
     },
     {
+      "path": "test/hey/process-table.janet",
+      "sha256": "8b6e45e22ccaab8aad765109bfa9cd1358dde3e96563b50db2b7d9e028fa2cc7",
+      "executable": false
+    },
+    {
+      "path": "test/hey/ssh.janet",
+      "sha256": "036d37177fa8a0fb7a2f1d7f895a4c9e858014f7077734d0eed78dddfb2398a8",
+      "executable": false
+    },
+    {
+      "path": "test/hey/system.janet",
+      "sha256": "95174864826ea52bb79146373959c1a64ebead04476c30b0066d5a0fcdfdde0f",
+      "executable": false
+    },
+    {
       "path": "test/hey/vars.janet",
       "sha256": "3c3e14330bed69913c27c392ab072216c1d5a15e3c81d792996ed20027b4649f",
       "executable": false
@@ -2422,13 +2387,253 @@
       "executable": false
     },
     {
-      "path": "tools/release.py",
-      "sha256": "25aaa5bbbfd8decb17ac2d1d2bd87c45a92700acd38147a5fcfbb964965b1933",
+      "path": "test_tools/README.md",
+      "sha256": "84a0875d52ff47466f2606ba74c9684e0f939689154cabfaf1ec29f4dea98aa0",
+      "executable": false
+    },
+    {
+      "path": "test_tools/check-policy.json",
+      "sha256": "799a257183965830b6eb2981cf9db2ecec6da48c657dc9da621a5fe1d2954525",
+      "executable": false
+    },
+    {
+      "path": "test_tools/check_plan.py",
+      "sha256": "40b5a767cf7892ffac45244160e61c0f6b5a4e2e0794950474438841cec383ae",
+      "executable": false
+    },
+    {
+      "path": "test_tools/fixture_ancestry.py",
+      "sha256": "8c9548a65ae887df3ac554254221764bec177e2d014a346bee78c8dccbc2a6ea",
+      "executable": false
+    },
+    {
+      "path": "test_tools/fixture_emacs_lsp.py",
+      "sha256": "d9f8a05aa28b8051b2a9da9f7b28fa714bd665c75b6f56c09fddf81a64ea7de6",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_emacs_certificate_equivalence.el",
+      "sha256": "f15d8c64c6748674eec1e395a189cac76bbb730631ff3ee38941d1ea51a9aa92",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_emacs_certificates.el",
+      "sha256": "4b84031cd89aa7b3753c278d9f5d713698a71162526632afaefe4f4f10dc1c6b",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_emacs_default_certificates.el",
+      "sha256": "8695afef6b9182165df050e092d0fd429c9ebd600a59d776aeac85e17372ef24",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_emacs_gui.el",
+      "sha256": "7777e217885b4ad71a41dfd290fa6987b0fe067774f136ed292ae7ba360c92b4",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_emacs_package.el",
+      "sha256": "0d4dfe149f6749fa3beafbe59497cd66cd63802f62a60e07ba13e61fda6a651b",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_emacs_source.el",
+      "sha256": "6aa91aa1509ebadc15aa9cc238878143b812876a20dd00ece6d023acb759a016",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_emacs_tls.py",
+      "sha256": "f6c55f977df9d181fc83378134d99b5977e551074540b1ec2ed06d6900b5402f",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_flymake_backends.el",
+      "sha256": "93325da13ccb5eb84f24011f2e96cb424cc581b9e41fc88efa03069a9605e8a9",
+      "executable": false
+    },
+    {
+      "path": "test_tools/probe_memory_http.mjs",
+      "sha256": "85f890358f02b4575f14b35b467007dbea9ad27c4432076d495ad968db66774d",
+      "executable": false
+    },
+    {
+      "path": "test_tools/run_cli_tests.py",
+      "sha256": "5a333107848aa1a91c624556a4a6658217063baa901f26a82b81ce7452bd0776",
+      "executable": false
+    },
+    {
+      "path": "test_tools/run_contract_tests.py",
+      "sha256": "2afc7e77ac0a68190c74a08dfd1178d820822a6bd91c9b2dd94c0e66d98b5ba2",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_agent_memory.py",
+      "sha256": "27b7692a52f535a0bf3d79b80cc4df38174f6f2b4e47f93669960100d6310cfc",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_check_plan.py",
+      "sha256": "95fa2cc9f5269ba73a16f19c150ebe875609075384a986f2d4fb612ae7797bf9",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_cli.py",
+      "sha256": "1e67acf32d35fa0ab574c61be67743005d3caa2e9fb746b672ec51be98e85cb3",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_cli_runner.py",
+      "sha256": "2a68583b78167fcfeb7885dad42c943bb7db7bd5d282438400c3690838883ae0",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_dependency_report.py",
+      "sha256": "10fa876727bf95c3789ac56b129ea6d6ef14db106a40d15a7fa43a3608c6a053",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_dependency_scan.py",
+      "sha256": "6a0ea281fe09f2f1225ebde0eb2488584a754464e8a3c8a9dd81553416409a46",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_install_user_file.py",
+      "sha256": "7fe674ba6f55a402f3016908068b6e16ca379bcd201d643c684ced8a20354bb4",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_omp_config.py",
+      "sha256": "111cef1b1226e4e913d562b6f0bc3e6faf6da3aa545fe54459952cc7730dd0dc",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_openvpn_client.py",
+      "sha256": "ae7db033679d4bd50bc77ce3a82bb1cd5f77f3938a018f4bfb42f36e61c18905",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_openvpn_credentials.py",
+      "sha256": "b9d77c20c0ac002ffa3cb84a118f5cc78d6b119f7623eaa134d0c4a8cceea4a6",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_process_supervisor.py",
+      "sha256": "217f52e33611fb1a29ef758e224d2642c9c28785d13d1f844ef9803e15d1e54b",
       "executable": false
     },
     {
       "path": "test_tools/test_release.py",
       "sha256": "2eec35d4ce96e53e5008964fb632e6ee785c5d9cdbd52d9c6aea31f1393f626e",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_runtime_inputs.py",
+      "sha256": "4113a5f12daae2d957e4608bc77ceac1793d23327a902b0f5c858eb776856acc",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_shell_startup.py",
+      "sha256": "911133bf7cadc3da8202fc07e457678269038a1ebb6852d3525b43db400a5848",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_ssh_certificate.py",
+      "sha256": "8208e6ea1f85523ff08b1ffa06d237e57fcfc8053b4c5e820332488a1afd4142",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_ssh_diagnostics.py",
+      "sha256": "17802f5413010e66cd05eae29dce4db2bc4a20380dec2d4eb6e4638ff62f6e71",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_system_activation.py",
+      "sha256": "fb125b3ee932b6c8b4a6b68102bc3af39950ef2a47935bb6694bf1133e0bd063",
+      "executable": false
+    },
+    {
+      "path": "test_tools/test_tracked_user_file.py",
+      "sha256": "a9a2d1751495d8fc6b3d3af2b58c18643443baaf7e011544a273aad1fdde8a0e",
+      "executable": false
+    },
+    {
+      "path": "tools/README.md",
+      "sha256": "77f966e66f62ba72437869bf17d77a74b41f212eaf03ccd2e7b9a335b3b3ebce",
+      "executable": false
+    },
+    {
+      "path": "tools/agent_config.py",
+      "sha256": "87a18b298b80eed12b60889a949c99d45546829c57408a9bff425bf8a80ef677",
+      "executable": false
+    },
+    {
+      "path": "tools/agent_memory.py",
+      "sha256": "57a6609acd9c6c7295e500d0e4ff0576f38fc0e5298d937863ecd874b30c965c",
+      "executable": false
+    },
+    {
+      "path": "tools/dependency_report.py",
+      "sha256": "34f207ab14e81a253751ab969ead1e675b24689cda354fe05df40e60edac8d4d",
+      "executable": false
+    },
+    {
+      "path": "tools/dependency_scan.py",
+      "sha256": "e708732a65eca6f53e28a346af36dfa014edfe1bdc45c919ce6310391390fc81",
+      "executable": false
+    },
+    {
+      "path": "tools/install_user_file.py",
+      "sha256": "9a479566d24b959be66b0253665c0a36cb7f7746ce9af7f4a79279449ed15431",
+      "executable": false
+    },
+    {
+      "path": "tools/openvpn_client.py",
+      "sha256": "f18f745f25110607cca190ff83309bf8b8a31ce0e3358fe6799192908b211454",
+      "executable": false
+    },
+    {
+      "path": "tools/openvpn_credentials.py",
+      "sha256": "9754e4842516b08945bd12a9c0fd248e667f483250bf67eb3330ae548721e821",
+      "executable": false
+    },
+    {
+      "path": "tools/process-supervisor/README.md",
+      "sha256": "22e2dab38f5a75a5d09872cbd63c96e6f21cef22b73fdadc263d0c6a62aac174",
+      "executable": false
+    },
+    {
+      "path": "tools/process-supervisor/main.c",
+      "sha256": "596decb60445cfc13f4f8f7a2ee4071e11f9a2b6927dc5e6579b55e5df739a7c",
+      "executable": false
+    },
+    {
+      "path": "tools/release.py",
+      "sha256": "25aaa5bbbfd8decb17ac2d1d2bd87c45a92700acd38147a5fcfbb964965b1933",
+      "executable": false
+    },
+    {
+      "path": "tools/runtime_input.py",
+      "sha256": "2bbb9415bba0542276d5b07c21d8b25c7225be4b1197d9d7dae16314ee60f7fc",
+      "executable": false
+    },
+    {
+      "path": "tools/ssh_certificate.py",
+      "sha256": "a5745ecddcb2cea9f7607d635e97808da36a9f30c55572f3f703516c2d74aa73",
+      "executable": false
+    },
+    {
+      "path": "tools/ssh_diagnostics.py",
+      "sha256": "17fef149303a39092b7c0ee7dcd055b659f2d4887edbb8e376a302bdc5dbd7f0",
+      "executable": false
+    },
+    {
+      "path": "tools/sync_omp_config.py",
+      "sha256": "5d4923223ecb9e16741be9f60a73b46ec986900037c16f1e9328e5fe379136d0",
+      "executable": false
+    },
+    {
+      "path": "tools/system_activation.py",
+      "sha256": "025b229fdf2a0a2c2ccb76478ff4c6d7f516269e5fc114cf609471681da3f568",
       "executable": false
     },
     {
@@ -2444,6 +2649,11 @@
     {
       "path": "tools/tmux-status/src/main.rs",
       "sha256": "58b05fcb5d45e8deb11ff02d2cf54a9bde8f1fcac72e7c48a44def35c269e162",
+      "executable": false
+    },
+    {
+      "path": "tools/tracked_user_file.py",
+      "sha256": "c977e7fbb1c0d9cb1c21910a73a1db1f43b76cd1333ad3be259117f0c9f5de54",
       "executable": false
     },
     {
@@ -2714,26 +2924,6 @@
     {
       "path": "vendor/janet/spork/zip.meta.janet",
       "sha256": "6f3186952ca75eb71006632da197cd2ea8dc2f182d6a6ed73e3a97e5dc465439",
-      "executable": false
-    },
-    {
-      "path": "lib/internal/zsh-cache-files.nix",
-      "sha256": "3e2b80aa2b77bdb2c6ea90e4e5d9a3998ccb18056a848c4f768f5b2103f7c638",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/zsh-workstation.nix",
-      "sha256": "ede0ab75b849fbddcb9e6e40a1affb019855167d6458aa05312180a8f75c5a75",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/tmux-workstation.nix",
-      "sha256": "f2ec839383984160e688f05fda644c65e74e7bf040e945327ff0e8b98d184fb5",
-      "executable": false
-    },
-    {
-      "path": "modules/shared/profiles/home-workstation.nix",
-      "sha256": "6312379a74c98ba677856ce19b9aa3997e7f9632959dbfe8aa46407667aa1d56",
       "executable": false
     }
   ]

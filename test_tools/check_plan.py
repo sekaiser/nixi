@@ -7,8 +7,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CATEGORIES = {"native", "evaluation", "vm"}
-REQUIRED_NATIVE = {"publication-boundary", "runtime-inputs", "process-supervisor",
-                   "user-file-installation", "cli-contracts", "ci-check-plan"}
+REQUIRED_NATIVE = {"agent-memory", "publication-boundary", "runtime-inputs", "process-supervisor",
+                   "user-file-installation", "cli-contracts", "ci-check-plan", "system-activation", "dependency-coverage"}
 
 
 def names(values):

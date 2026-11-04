@@ -81,6 +81,8 @@
     })
     .config;
   defaults = outputs.nixosConfigurations.server.config;
+  disabled = role:
+    ((custom role).extendModules {modules = [{services.k3s.enable = false;}];}).config;
   # NixOS applies autoDeployCharts into a generated HelmChart manifest.
   serverManifest = builtins.fromJSON server.services.k3s.autoDeployCharts.cilium.source.value;
   serverValues = builtins.fromJSON (builtins.head serverManifest.items).spec.valuesContent;
@@ -97,4 +99,7 @@ in
   assert builtins.elem "--service-cidr=198.51.100.0/24" server.services.k3s.extraFlags;
   assert builtins.elem "--advertise-routes=192.0.2.0/24,198.51.100.0/24" server.services.tailscale.extraUpFlags;
   assert builtins.elem "--advertise-routes=" noRoutes.services.tailscale.extraUpFlags;
+  assert lib.all (role: !((disabled role).systemd.services ? k3s)) ["server" "agent"];
+  assert lib.all (role: lib.all (interface: !builtins.elem interface (disabled role).networking.firewall.trustedInterfaces) ["cilium_host" "cilium_net" "lxc+"]) ["server" "agent"];
+  assert lib.all (role: builtins.elem "tailscale0" (disabled role).networking.firewall.trustedInterfaces) ["server" "agent"];
     runCommand "homelab-policy-check" {} ''touch "$out"''

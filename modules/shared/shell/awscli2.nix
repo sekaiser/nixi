@@ -148,7 +148,7 @@
       username = mkOption {
         type = nullOr str;
         default = null;
-        description = "SAML username. Prefer leaving this in a private overlay if sensitive.";
+        description = "Inline SAML username, included in a Nix store file. Private source or overlays do not make store outputs confidential. For sensitive usernames, leave this null and use usernameFile with a runtime secret provider.";
       };
       usernameFile = mkOption {
         type = nullOr contracts.runtimeSecretPath;
@@ -316,7 +316,11 @@ in {
       };
     };
     eks = {
-      enable = mkBoolOpt true;
+      enable = mkOption {
+        type = bool;
+        default = false;
+        description = "Install kubectl, k9s, kubectx and stern with managed k9s configuration, and advertise EKS tooling in Hey metadata. AWS configuration and SSO/SAML login remain independent.";
+      };
       clusters = mkOption {
         type = attrsOf eksClusterType;
         default = {};

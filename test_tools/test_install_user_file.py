@@ -11,6 +11,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from fixture_ancestry import model_ancestor_fstat
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import install_user_file as installer
 
@@ -19,7 +21,10 @@ class UserFileInstallation(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="nixi-user-file-")
         self.addCleanup(temporary.cleanup)
-        self.root = Path(temporary.name)
+        self.root = Path(temporary.name).resolve()
+        ancestry = model_ancestor_fstat(self.root)
+        ancestry.__enter__()
+        self.addCleanup(ancestry.__exit__, None, None, None)
         self.source = self.root / "source"
         self.source.write_text("synthetic secret\n")
         self.user = pwd.getpwuid(os.geteuid()).pw_name
@@ -38,6 +43,15 @@ class UserFileInstallation(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(target.parent.stat().st_mode), 0o700)
         self.assertEqual(list(target.parent.iterdir()), [target])
+
+    def test_opt_in_tracking_creates_private_receipt(self):
+        target = self.root / "home/config/secret"
+        receipt = self.root / "state/receipt.json"
+        with patch.object(installer.os, "umask"):
+            installer.install(self.source, target, self.user, self.group, 0o600, receipt=receipt)
+        self.assertTrue(receipt.is_file())
+        self.assertEqual(stat.S_IMODE(receipt.stat().st_mode), 0o600)
+        self.assertNotIn(b"synthetic secret", receipt.read_bytes())
 
     def test_oversize_source_preserves_destination_and_cleans_staging(self):
         target = self.root / "installed"

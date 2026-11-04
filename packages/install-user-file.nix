@@ -9,6 +9,7 @@
     mkdir -p "$out"
     cp ${../tools/install_user_file.py} "$out/install_user_file.py"
     cp ${../tools/runtime_input.py} "$out/runtime_input.py"
+    cp ${../tools/tracked_user_file.py} "$out/tracked_user_file.py"
   '';
   entry = ''
     import sys

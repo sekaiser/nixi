@@ -6,6 +6,7 @@ must happen entirely as the recipient. No root chmod/chown of home directories.
 import argparse
 from collections import deque
 import grp
+import json
 import os
 from pathlib import Path
 import pwd
@@ -171,13 +172,17 @@ def root_destination(destination):
             os.close(directory)
 
 
-def install(source, destination, user, group, mode):
+def install(source, destination, user, group, mode, receipt=None):
     # Open only the explicitly configured source while privileged. Keeping this
     # descriptor avoids exposing the source path or a staging directory to users.
     recipient_uid = pwd.getpwnam(user).pw_uid
     with open_source(source, recipient_uid) as incoming:
         drop_privileges(user, group)
         os.umask(0o077)
+        if receipt is not None:
+            from tracked_user_file import install_tracked
+            install_tracked(incoming, destination, receipt, mode, replace_file)
+            return
         destination = Path(destination)
         destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         directory = os.open(destination.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -192,8 +197,14 @@ def install(source, destination, user, group, mode):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--prepare-source-directory", metavar="PATH",
+    operations = parser.add_mutually_exclusive_group()
+    operations.add_argument("--prepare-source-directory", metavar="PATH",
                         help="Prepare a protected provider directory as root; never chmod/chown existing paths")
+    operations.add_argument("--preview-retirement", metavar="RECEIPT", help="Preview one tracked copy as its recipient; creates no files")
+    operations.add_argument("--retire-receipt", metavar="RECEIPT", help="Explicitly retire one unchanged tracked copy as its recipient")
+    operations.add_argument("--restore-retirement", metavar="RECEIPT", help="Restore an interrupted retirement without overwriting an existing target")
+    parser.add_argument("--receipt", help="Opt into private provenance tracking for this 0600 installation")
+    parser.add_argument("--review-token", help="Fresh random token from the preview of this receipt")
     parser.add_argument("source", nargs="?")
     parser.add_argument("destination", nargs="?")
     parser.add_argument("user", nargs="?")
@@ -201,8 +212,25 @@ def main():
     parser.add_argument("mode", nargs="?", type=lambda value: int(value, 8), choices=[0o600, 0o644])
     args = parser.parse_args()
     values = (args.source, args.destination, args.user, args.group, args.mode)
+    lifecycle = args.preview_retirement or args.retire_receipt or args.restore_retirement
+    if lifecycle is not None:
+        if any(value is not None for value in values) or args.receipt is not None:
+            parser.error("retirement cannot be combined with file installation")
+        if bool(args.retire_receipt) != (args.review_token is not None):
+            parser.error("only retirement apply requires --review-token")
+        try:
+            from tracked_user_file import preview, retire, restore
+            with deadline(45):
+                result = (retire(lifecycle, args.review_token) if args.retire_receipt
+                          else restore(lifecycle) if args.restore_retirement else preview(lifecycle))
+        except Exception:
+            parser.exit(2, "Tracked-file operation refused or interrupted; no values logged. Inspect the private receipt and any pending quarantine before retrying.\n")
+        print(json.dumps(result, sort_keys=True))
+        parser.exit(0 if result["status"] in ("ready", "missing", "retired", "restored", "nothing-pending", "no-payload") else 1)
+    if args.review_token is not None:
+        parser.error("--review-token requires --retire-receipt")
     if args.prepare_source_directory is not None:
-        if any(value is not None for value in values):
+        if any(value is not None for value in values) or args.receipt is not None:
             parser.error("directory preparation cannot be combined with file installation")
         if not args.prepare_source_directory:
             parser.error("source directory must not be empty")
@@ -214,7 +242,13 @@ def main():
     if any(value is None for value in values):
         parser.error("file installation requires source, destination, user, group and mode")
     with deadline(45):
-        install(args.source, args.destination, args.user, args.group, args.mode)
+        if args.receipt is None:
+            install(args.source, args.destination, args.user, args.group, args.mode)
+        else:
+            try:
+                install(args.source, args.destination, args.user, args.group, args.mode, receipt=args.receipt)
+            except Exception:
+                parser.exit(2, "Tracked installation incomplete; a copied file may remain without a current receipt. No values logged. Verify before retrying or retiring anything.\n")
 
 
 if __name__ == "__main__":

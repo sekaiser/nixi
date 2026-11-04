@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "systems": ["aarch64-darwin", "aarch64-linux", "x86_64-linux"],
+  "frameworkPackages": {
+    "agent-memory": "scan",
+    "codegraph": "scan",
+    "hey": "scan",
+    "hey-janet-deps": "scan",
+    "hey-janet-lib": "via-hey",
+    "hey-python": "scan",
+    "humanizer": "data-only",
+    "install-user-file": "scan",
+    "process-supervisor": "scan",
+    "ssh-certificate": "scan",
+    "system-activation": "scan",
+    "taste-skill": "data-only",
+    "tencent-memory-core": "scan",
+    "tmux-status": "scan",
+    "tmuxsel": "scan"
+  },
+  "services": ["caddy", "docker", "gitea", "k3s", "tailscale"],
+  "components": [
+    {
+      "id": "framework-packages",
+      "sources": ["flake.nix", "packages"],
+      "coverage": "Nix derivation/build-dependency matching for every scan-classified public package on all supported systems; default is an alias of hey."
+    },
+    {
+      "id": "janet-vendor",
+      "sources": ["packages/hey-janet-deps.nix", "packages/hey-janet-lib.nix", "vendor/janet", "NOTICE.md"],
+      "coverage": "Pinned cmd, judge, posix-spawn, sh and spork sources are referenced by the inventory and Hey graph. Generic package names do not guarantee upstream advisory matching."
+    },
+    {
+      "id": "memorycore-npm",
+      "sources": ["packages/tencent-memory-core.nix", "assets/agent-memory/package.json", "assets/agent-memory/package-lock.json"],
+      "coverage": "Separate public npm registry audit of the committed lockfile with development dependencies omitted; native Node dependencies also appear in Nix graphs. Node's bundled Undici/global fetch and linked OpenSSL are outside the npm lock audit."
+    },
+    {
+      "id": "optional-services",
+      "sources": ["modules/platform/linux/services/caddy.nix", "modules/platform/linux/services/docker.nix", "modules/platform/linux/services/gitea.nix", "modules/platform/linux/services/k3s-server.nix", "modules/platform/linux/services/tailscale.nix"],
+      "coverage": "Effective default packages of five representative synthetic Linux service configurations on both Linux architectures; no system closure or service execution."
+    },
+    {
+      "id": "emacs-and-doom",
+      "sources": ["modules/shared/editors/emacs.nix", "assets/doom", "assets/doom-minimal", "flake.lock"],
+      "coverage": "The actual module's default Emacs package is a Nix scan root on all systems. Doom configuration and source pins are inventoried; the resolved Lisp/grammar graph is excluded."
+    },
+    {
+      "id": "cluster-images",
+      "sources": ["lib/internal/addon-pins.nix", "modules/platform/linux/profiles/k3s-cilium.nix"],
+      "coverage": "Cilium chart/Gateway API pins and recipe sources are inventoried. K3s/Cilium image layers and running cluster image choices are not inspected."
+    },
+    {
+      "id": "opaque-bundles",
+      "sources": ["packages/codegraph.nix"],
+      "coverage": "Codegraph's public package version is scanned; embedded libraries in the upstream binary require a separate upstream SBOM/source review."
+    }
+  ],
+  "exclusions": [
+    {"id": "doom-resolved-packages", "reason": "Complete Doom Lisp and Tree-sitter inventory requires the actual selected Doom configuration and evaluation/build prerequisites; this runner never relaxes the IFD guard."},
+    {"id": "container-layers", "reason": "Derivation matching does not inspect OCI layers, chart-selected images, sidecars or runtime cluster images; digest-bound image scanning remains separate."},
+    {"id": "bundled-native-libraries", "reason": "Prebuilt Codegraph, Node's bundled Undici/global fetch and other vendored/bundled code may not expose individual library versions to NVD matching; a scanned parent or clean npm lock is not coverage of every embedded component."},
+    {"id": "consumer-selections", "reason": "Private hosts, inputs, closures, credentials, overrides, arbitrary workstation packages, Homebrew/external tools and consumer-selected configurations are never public scan targets."},
+    {"id": "data-and-source-only", "reason": "Humanizer/taste are data-only; hey-janet-lib is included through Hey. These do not receive independent package-name scans."},
+    {"id": "heuristic-and-database-gaps", "reason": "Vulnix uses package-name/version and CVE-patch heuristics; npm uses registry advisories. Database freshness, backports, unsupported ecosystems and reachability need review."}
+  ]
+}

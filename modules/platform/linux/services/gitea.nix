@@ -2,7 +2,6 @@
   hey,
   config,
   lib,
-  pkgs,
   ...
 }: let
   inherit (lib) mkIf mkOption types;
@@ -26,54 +25,28 @@ in {
       default = "Info";
       description = "Gitea log level.";
     };
+    deploymentPolicy = mkOption {
+      type = types.nullOr (types.enum ["native"]);
+      default = null;
+      description = "Select native Gitea deployment defaults explicitly after reviewing storage, database, mail and login behavior. Alternatively enable the gitea-compatibility preset to retain the former adapter policy. No data migration is performed.";
+    };
   };
 
   config = mkIf cfg.enable {
-    # Compatibility defaults, not deployment requirements. Keep existing state
-    # locations and security settings stable while native consumer options win.
-    # New deployments can use services.gitea directly without this adapter.
+    assertions = [
+      {
+        assertion = !config.services.gitea.enable || ((cfg.deploymentPolicy == "native") != (config.modules.profiles.gitea-compatibility.enable or false));
+        message = ''Select exactly one Gitea deployment policy: enable modules.profiles.gitea-compatibility to retain existing defaults, or set modules.services.gitea.deploymentPolicy = "native" after reviewing storage, database, mail and login settings.'';
+      }
+    ];
+    # Identity wiring only. Storage and operational policy are native settings
+    # or the explicitly selected compatibility preset, never a silent migration.
     services.gitea = lib.mapAttrsRecursive (_: value: lib.mkDefault value) {
       enable = true;
-      user = "gitea";
-      group = "gitea";
-      stateDir = "/data/apps/gitea";
       appName = cfg.appName;
-      lfs.enable = true;
-      dump = {
-        enable = false;
-        interval = "hourly";
-        file = "gitea-dump";
-        type = "tar.zst";
-      };
       settings = {
-        server = {
-          PROTOCOL = "http";
-          DOMAIN = cfg.domain;
-          DISABLE_ROUTER_LOG = true;
-          DISABLE_SSH = true;
-        };
-        database.LOG_SQL = false;
-        service.ENABLE_BASIC_AUTHENTICATION = true;
+        server.DOMAIN = cfg.domain;
         log.LEVEL = cfg.logLevel;
-        security = {
-          LOGIN_REMEMBER_DAYS = 31;
-          PASSWORD_HASH_ALGO = "scrypt";
-          MIN_PASSWORD_LENGTH = 10;
-        };
-
-        mailer = {
-          ENABLED = true;
-          MAILER_TYPE = "sendmail";
-          FROM = "do-not-reply@${cfg.domain}";
-          SENDMAIL_PATH = "${pkgs.system-sendmail}/bin/sendmail";
-        };
-        other = {
-          SHOW_FOOTER_VERSION = false;
-        };
-      };
-      database = {
-        type = "sqlite3";
-        createDatabase = true;
       };
     };
   };

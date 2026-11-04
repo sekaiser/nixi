@@ -23,6 +23,10 @@ Remove that selection to return to upstream packages. Large dependency rebuilds
 are a tradeoff the consumer chooses, not an implicit cost of using the framework.
 Turning off an override does not resolve the associated advisories.
 
+The opt-in OpenSSL catalog now sets a 3.6.5 floor for older 3.6 recipes.
+The default reviewed snapshots already provide the September fixes through
+OpenSSL 3.6.5 (stable) or 3.5.9 (unstable), so they do not need this overlay.
+
 1. Prefer a reviewed Nixpkgs revision containing the necessary fixes. Update the
    relevant inputs with `hey pull nixpkgs nixpkgs-darwin nixpkgs-unstable`, inspect
    the lock diff, then evaluate/test the affected platforms. Upstream binaries
@@ -64,6 +68,34 @@ is offline and does not evaluate a flake, update locks, scan CVEs or change stat
 The default 30-day threshold is a review prompt, not an acceptable delay for a
 known urgent vulnerability. Critical advisories need prompt assessment.
 
+## Package selection
+
+The framework's reviewed package snapshots are:
+
+| Input | Revision | Selected OpenSSL |
+| --- | --- | --- |
+| Stable Linux and Darwin | `9bb52223f4f6a0cc606fd0852d8784f896c137d5` | 3.6.5 |
+| Unstable | `0bb2eedc20e4739f29e8045034f2828ad7054f8f` | 3.5.9 |
+
+These versions include the fixes from the upstream
+[August](https://openssl-library.org/news/secadv/20260825.txt) and
+[September](https://openssl-library.org/news/secadv/20260929.txt) advisories.
+The Darwin input deliberately uses the reviewed general stable snapshot to
+obtain Node 24.22.1, retaining its declared update channel and follows graph.
+Review Node again when refreshing that channel; a newer lock timestamp alone
+is insufficient. All other input identities are retained.
+
+The Emacs recipe preserves the four inherited upstream patches and appends
+whole-string TRAMP username validation and canonical literal CA-path handling.
+Doom's selected external GNU ELPA Flymake 1.4.7 is checksum-verified and repacked
+with the trusted-backend guard, retaining normal install/native phases. See
+[editor behavior and checks](doom-emacs.md). Optional diagnostic-region and
+callback behavior changes are excluded.
+
+Source integration and successful checks do not change an already running host.
+Deployment, service restarts and live application checks remain explicit
+operational steps.
+
 ## Explicit advisory scanning
 
 Install `vulnix` from a reviewed, pinned package set when you choose to scan. Nixi
@@ -87,6 +119,98 @@ package family or accept automatically generated suppressions without review.
 Private reports and suppression notes can reveal installed software, store paths
 or endpoints; never upload them through the public framework workflow.
 
+## Public coverage inventory and scan runner
+
+`security/dependency-coverage.json` classifies every public package definition
+and records component sources, representative targets and exclusions. Adding a
+package without classifying it fails the mandatory `dependency-coverage` check.
+The inventory binds its source references to the reviewed release manifest,
+coverage policy and lock hashes. It includes 169 entries from the committed
+MemoryCore npm lock, including development/optional flags; the npm audit itself
+omits development dependencies. This is a coverage inventory, not a complete
+resolved SBOM.
+
+The selected Nix roots are:
+
+| Scope | Selected roots |
+| --- | --- |
+| Every supported system | Twelve executable/runtime framework packages, plus the actual module's default Emacs package |
+| Both Linux architectures | Default Caddy, Docker, Gitea, K3s and Tailscale packages from synthetic public configurations |
+| Separate npm audit | The committed public MemoryCore lock, without installing packages or executing scripts |
+
+There are 13 roots on Darwin and 18 on each Linux architecture, before duplicate
+derivations are coalesced for scanning. `default` aliases Hey; Humanizer/taste are
+data-only and the Janet runtime library is covered through Hey. Package metadata
+is evaluated with IFD, local jobs and builders disabled. No target output, host
+closure, service, image or private consumer is built or activated.
+
+Inventory/exclusions also identify the pinned Janet sources, Doom configurations,
+Cilium/Gateway API recipe and opaque Codegraph bundle. Complete resolved Doom
+Lisp/grammar packages, OCI layers and bundled native libraries remain gaps.
+Neither parent-package matching nor chart/source inventory establishes coverage
+of every embedded component. Private inputs, arbitrary consumer packages,
+Homebrew/external executables and running host/cluster selections are excluded.
+The actual dependency update/remediation work remains separate.
+
+From the reviewed public source, write a new offline report:
+
+```sh
+python3 tools/dependency_scan.py inventory --output /tmp/nixi-inventory.json
+```
+
+To run selected advisory scans with tools from a reviewed package snapshot:
+
+```sh
+python3 tools/dependency_scan.py nix --system x86_64-linux \
+  --scanner /absolute/path/to/vulnix --output /tmp/nixi-advisories.json
+python3 tools/dependency_scan.py npm --npm /absolute/path/to/npm \
+  --output /tmp/nixi-npm-audit.json
+```
+
+Reports require new filenames and default to mode 0600. Before any Nix evaluation
+or scanner execution, the runner stages a verified allowlist-only export; ignored
+working files are not imported into the store or submitted to a registry. The
+npm step uses only the public manifest/lock in a disposable directory, empty npm
+config files and no inherited npm auth/config variables. It sends that public
+dependency description to `registry.npmjs.org`, runs no scripts, performs no
+install/fix and checks that its scratch lock remains unchanged.
+
+Exit 0 means inventory succeeded or the selected scan finished with no matches;
+1 means validated advisory candidates; 2 means incomplete/refused. Every report
+retains explicit exclusions and representative-only scope. `asOf` is execution
+time, not proof that an advisory database is current. Unknown/malformed output,
+inconsistent exit/count data, scanner diagnostics, missing tools, evaluation,
+network and timeout failures cannot become a no-match report. The pinned Vulnix
+uses exit 2 for findings and some errors, so JSON/diagnostics are checked too.
+Npm results retain package, severity and validated GHSA/package references;
+Vulnix results retain package versions, public derivations and CVE identifiers.
+Raw diagnostics, titles, exception text and unvalidated payloads are withheld.
+
+Commands have bounded file-backed captures and a ten-minute per-command timeout.
+Process-group cleanup does not contain work deliberately detached by an external
+tool or an uninterruptible kernel operation. These source/configuration and
+synthetic protocol tests do not establish live advisory-feed availability,
+scanner recall, candidate-pin acceptance or remediation of a deployed process.
+
+## MemoryCore HTTP dependencies
+
+The integrated production npm lock uses Undici 8.12.3 at the root and 6.29.1
+in both nested locations. Parent dependency ranges and unrelated lock entries
+are retained, and `npmDepsHash` matches the updated graph.
+
+The stable package snapshot supplies Node 24.22.1, whose upstream
+[security release](https://nodejs.org/en/blog/release/v24.22.1) includes bundled
+Undici 7.30.1. Updating the npm copies alone did not fix Node's separate global
+fetch implementation. The harmless data-URL regression rejects an incorrect
+uppercase integrity digest for every npm copy and bundled fetch, corresponding
+to the maintainer's [SRI advisory](https://github.com/nodejs/undici/security/advisories/GHSA-f72v-6w45-q472).
+
+Mandatory native `agent-memory` CI runs `probe_memory_http.mjs --require-bundled`
+against the built Core and its actual Node runtime. The test requires no network
+listener or private configuration. A clean npm audit covers the submitted lock,
+not every bundled library, consumer path or running process. The optional
+three-system advisory workflow and its documented exclusions still apply.
+
 ## Opt-in public maintenance workflow
 
 `.github/workflows/dependency-maintenance.yml` runs only in a public repository
@@ -96,14 +220,17 @@ reviewed public layout first; private staging and consumer inventories are
 deliberately unsupported. Change the schedule to your maintenance policy.
 
 The workflow has read-only repository permissions and no deployment credentials.
-It creates a seven-day artifact containing a lifecycle report, proposed package
-input lock, patch, advisory output and completion status. The proposal only
-updates the three Nixpkgs inputs, in a separate output file. The advisory job
-scans the CURRENT public Linux Hey derivation/build dependencies, not every
-module, platform, candidate update or consumer host. The scanner is selected
-from that checkout's locked upstream Nixpkgs; it may need to be downloaded/built,
-but the target system is never built or activated. Missing scanner support or
-network failures require investigation, not treating an empty artifact as clean.
+It creates seven-day artifacts containing lifecycle/coverage inventories,
+proposed package input lock/patch, normalized scan reports and completion status.
+The proposal only updates the three Nixpkgs inputs in a separate output file.
+An independent matrix scans CURRENT public derivation/build dependencies for
+all three supported systems, including the representative defaults above.
+A separate step audits the committed MemoryCore npm lock. Matrix failure does
+not cancel the other platforms. Scanner/npm tools come from that checkout's
+locked upstream Nixpkgs; acquisition can download/build those tools, while scan
+targets are never realized. Failures before a scanner report exists produce an
+explicit machine-readable `incomplete` report. Findings/incomplete scans fail
+the attention gate; an empty/missing artifact cannot count as success.
 
 No branch, PR, merge or deployment is created. Review the artifact and job logs,
 apply the patch locally if appropriate, run native checks, review remaining

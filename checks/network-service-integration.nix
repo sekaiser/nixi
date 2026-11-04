@@ -5,6 +5,7 @@
   coreutils,
   jq,
   caddy,
+  python3,
   runCommand,
   writeText,
   writeShellScriptBin,
@@ -15,8 +16,11 @@
       self.outPath = ./fixtures/cli-host;
       inherit nixi;
     };
-    hosts.server = {
-      system = "x86_64-linux";
+    hosts = lib.genAttrs ["server" "arm"] (name: {
+      system =
+        if name == "server"
+        then "x86_64-linux"
+        else "aarch64-linux";
       module = _: {
         config = {
           user = {
@@ -27,10 +31,150 @@
           system.stateVersion = "26.05";
         };
       };
-    };
+    });
   };
   host = outputs.nixosConfigurations.server;
   extend = module: (host.extendModules {modules = [module];}).config;
+  policyBlocked = cfg: lib.any (a: !a.assertion && lib.hasInfix "Gitea deployment policy" a.message) cfg.assertions;
+  unselectedPolicy = extend {
+    modules.services.gitea = {
+      enable = true;
+      domain = "git.example.invalid";
+    };
+  };
+  policyCases = target: let
+    configured = settings: (target.extendModules {modules = [settings];}).config;
+    adapter.modules.services.gitea = {
+      enable = true;
+      domain = "git.example.invalid";
+    };
+    compatModule = {
+      modules.profiles.gitea-compatibility.enable = true;
+      modules.services.gitea.domain = "git.example.invalid";
+    };
+  in {
+    unselected = configured adapter;
+    native = configured {
+      imports = [adapter];
+      modules.services.gitea.deploymentPolicy = "native";
+    };
+    upstream = configured {
+      services.gitea = {
+        enable = true;
+        appName = "Gitea";
+        settings.server.DOMAIN = "git.example.invalid";
+        settings.log.LEVEL = "Info";
+      };
+    };
+    compat = configured compatModule;
+    override = configured {
+      imports = [compatModule];
+      services.gitea = {
+        stateDir = "/srv/review-git";
+        database = {
+          type = "postgres";
+          createDatabase = false;
+        };
+        lfs.enable = false;
+        settings = {
+          mailer.ENABLED = false;
+          service.ENABLE_BASIC_AUTHENTICATION = false;
+          security = {
+            LOGIN_REMEMBER_DAYS = 7;
+            PASSWORD_HASH_ALGO = "argon2";
+            MIN_PASSWORD_LENGTH = 16;
+          };
+        };
+      };
+    };
+    disabled = map (settings: configured {imports = [compatModule settings];}) [
+      {modules.services.gitea.enable = false;}
+      {services.gitea.enable = false;}
+    ];
+    nativeDisabled = configured {
+      imports = [adapter];
+      services.gitea.enable = false;
+    };
+    ambiguous = configured {
+      imports = [compatModule];
+      modules.services.gitea.deploymentPolicy = "native";
+    };
+    tailnetNative = configured {
+      imports = [profileModule];
+      modules.profiles.gitea-compatibility.enable = false;
+      modules.services.gitea.deploymentPolicy = "native";
+    };
+    nativeOwned = configured {
+      imports = [compatModule];
+      modules.services.gitea.enable = false;
+      services.gitea = {
+        enable = true;
+        stateDir = "/srv/native-owned";
+      };
+    };
+  };
+  deployment = cfg: let
+    g = cfg.services.gitea;
+  in {
+    inherit (g) stateDir customDir repositoryRoot user group appName lfs database dump settings;
+  };
+  policyMatrix = target: let
+    cases = policyCases target;
+    g = cases.compat.services.gitea;
+    changed = cases.override.services.gitea;
+  in
+    deployment cases.native
+    == deployment cases.upstream
+    && !policyBlocked cases.native
+    && !policyBlocked cases.compat
+    && policyBlocked cases.unselected
+    && policyBlocked cases.ambiguous
+    && g.stateDir == "/data/apps/gitea"
+    && g.database.type == "sqlite3"
+    && g.database.createDatabase
+    && g.lfs.enable
+    && !g.dump.enable
+    && g.dump.interval == "hourly"
+    && g.dump.file == "gitea-dump"
+    && g.dump.type == "tar.zst"
+    && g.settings.mailer.ENABLED
+    && g.settings.mailer.MAILER_TYPE == "sendmail"
+    && g.settings.service.ENABLE_BASIC_AUTHENTICATION
+    && g.settings.security.LOGIN_REMEMBER_DAYS == 31
+    && g.settings.security.PASSWORD_HASH_ALGO == "scrypt"
+    && g.settings.security.MIN_PASSWORD_LENGTH == 10
+    && changed.stateDir == "/srv/review-git"
+    && changed.database.type == "postgres"
+    && !changed.database.createDatabase
+    && !changed.lfs.enable
+    && !changed.settings.mailer.ENABLED
+    && !changed.settings.service.ENABLE_BASIC_AUTHENTICATION
+    && changed.settings.security.MIN_PASSWORD_LENGTH == 16
+    && lib.all (cfg: !cfg.services.gitea.enable && !policyBlocked cfg && cfg.services.gitea.stateDir == target.config.services.gitea.stateDir) cases.disabled
+    && !policyBlocked cases.nativeDisabled
+    && !policyBlocked cases.tailnetNative
+    && cases.tailnetNative.services.gitea.stateDir == cases.upstream.services.gitea.stateDir
+    && cases.tailnetNative.services.gitea.settings.mailer.ENABLED == cases.upstream.services.gitea.settings.mailer.ENABLED
+    && cases.tailnetNative.services.gitea.settings.server.HTTP_ADDR == "127.0.0.1"
+    && !policyBlocked cases.nativeOwned
+    && cases.nativeOwned.services.gitea.stateDir == "/srv/native-owned"
+    && !cases.nativeOwned.services.gitea.lfs.enable;
+  policyTargets = builtins.attrValues outputs.nixosConfigurations;
+  policyFixtures = writeText "gitea-deployment-fixtures.json" (builtins.toJSON (lib.concatMap (target:
+    map (name: let
+      cfg = (policyCases target).${name};
+      g = cfg.services.gitea;
+    in {
+      inherit name;
+      system = target.pkgs.stdenv.hostPlatform.system;
+      state = g.stateDir;
+      database = g.database.type;
+      mailer = g.settings.mailer.ENABLED;
+      ini = builtins.unsafeDiscardStringContext (''          WORK_PATH = ${g.stateDir}
+        ''
+        + lib.generators.toINI {} g.settings);
+    }) ["native" "compat" "override"])
+  policyTargets));
   sshDefault = extend {modules.services.ssh.enable = true;};
   sshExplicitDns = extend {
     modules.services.ssh.enable = true;
@@ -66,6 +210,7 @@
     services.caddy.virtualHosts."example.invalid".extraConfig = ''respond "OK"'';
   };
   independent = extend {
+    modules.profiles.gitea-compatibility.enable = true;
     modules.services = {
       caddy.enable = true;
       gitea = {
@@ -75,11 +220,15 @@
     };
   };
   profileModule = {
-    modules.profiles.gitea-tailscale.enable = true;
+    modules.profiles.gitea-tailscale = {
+      enable = true;
+      listenAddresses = ["100.100.100.10" "fd7a:115c:a1e0::10"];
+    };
     modules.services.gitea.domain = "git.example.ts.net";
     services.caddy.virtualHosts."public.example.invalid".extraConfig = ''respond "public"'';
   };
   giteaNative = extend {
+    modules.profiles.gitea-compatibility.enable = true;
     modules.services.gitea = {
       enable = true;
       domain = "git.example.invalid";
@@ -128,6 +277,7 @@
   giteaAlone = extend {
     modules.services.gitea = {
       enable = true;
+      deploymentPolicy = "native";
       domain = "git.example.invalid";
     };
   };
@@ -139,6 +289,15 @@
     services.gitea.enable = false;
   };
   profile = extend profileModule;
+  public = extend {
+    imports = [profileModule];
+    modules.profiles.gitea-tailscale.exposure = "public";
+    services.caddy.virtualHosts."git.example.ts.net:8890".listenAddresses = [];
+  };
+  invalidExposure = settings: let
+    configured = extend {imports = [profileModule settings];};
+  in
+    lib.any (a: !a.assertion && lib.hasInfix "gitea-tailscale" a.message) configured.assertions;
   overridden = extend {
     imports = [profileModule];
     modules.profiles.gitea-tailscale.httpsPort = 443;
@@ -199,12 +358,15 @@
       }
       ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: vhost: ''
           ${name} {
+            ${lib.optionalString (vhost.listenAddresses != []) "bind ${lib.concatStringsSep " " vhost.listenAddresses}"}
             ${vhost.extraConfig}
           }
         '')
         cfg.services.caddy.virtualHosts)}
     '';
 in
+  assert lib.assertMsg (policyBlocked unselectedPolicy) "Gitea deployment policy selection must be explicit";
+  assert lib.assertMsg (lib.all policyMatrix policyTargets) "Gitea deployment policy matrix failed";
   # Hey's SSH policy probe can certify the default, but still refuses explicit
   # DNS-based Match policies. Never override a consumer's deliberate setting.
   assert !sshDefault.services.openssh.settings.UseDns;
@@ -232,6 +394,7 @@ in
   assert independent.services.caddy.virtualHosts == {};
   assert giteaAlone.networking.firewall.allowedTCPPorts == host.config.networking.firewall.allowedTCPPorts;
   assert !giteaDisabled.services.gitea.enable;
+  assert !policyBlocked profile && profile.services.gitea.stateDir == "/data/apps/gitea" && profile.services.gitea.database.type == "sqlite3" && profile.services.gitea.lfs.enable;
   assert independent.services.gitea.stateDir == "/data/apps/gitea";
   assert independent.services.gitea.database.type == "sqlite3";
   assert independent.services.gitea.settings.mailer.ENABLED;
@@ -258,13 +421,52 @@ in
   assert !lib.hasInfix ":8890" independent.services.gitea.settings.server.ROOT_URL;
   assert server.HTTP_PORT == 3301 && server.ROOT_URL == "https://git.example.ts.net:8890/";
   assert profile.services.tailscale.enable && profile.services.tailscale.permitCertUid == profile.services.caddy.user;
-  assert lib.elem 8890 profile.networking.firewall.allowedTCPPorts;
+  assert !(lib.elem 8890 profile.networking.firewall.allowedTCPPorts);
+  assert !profile.services.caddy.openFirewall;
+  assert lib.elem 8890 profile.networking.firewall.interfaces.tailscale0.allowedTCPPorts;
+  assert profile.services.caddy.virtualHosts."git.example.ts.net:8890".listenAddresses == ["100.100.100.10" "[fd7a:115c:a1e0::10]"];
+  assert lib.elem 8890 public.networking.firewall.allowedTCPPorts;
+  assert public.services.caddy.virtualHosts."git.example.ts.net:8890".listenAddresses == [];
+  assert invalidExposure {services.caddy.openFirewall = true;};
+  assert invalidExposure {networking.firewall.allowedTCPPorts = [8890];};
+  assert invalidExposure {
+    networking.firewall.allowedTCPPortRanges = [
+      {
+        from = 8800;
+        to = 8900;
+      }
+    ];
+  };
+  assert invalidExposure {services.gitea.settings.server.HTTP_ADDR = "0.0.0.0";};
+  assert lib.all (address: invalidExposure {services.caddy.virtualHosts."git.example.ts.net:8890".listenAddresses = [address];})
+  ["0.0.0.0" "::" "100.64.999.1" "100.63.1.1" "fd7a:115c:a1e0:::1" "fd7a:115c:a1e0::1::2" "127.0.0.1"];
+  assert invalidExposure {services.caddy.virtualHosts."git.example.ts.net:8890".listenAddresses = [];};
   assert overridden.services.tailscale.permitCertUid == "proxy";
   assert lib.hasInfix "http://[::1]:3456" overridden.services.caddy.virtualHosts."git.example.ts.net:443".extraConfig;
   assert overridden.services.gitea.settings.server.ROOT_URL == "https://git.example.ts.net:443/";
     runCommand "network-service-integration-check" {
-      nativeBuildInputs = [bash coreutils jq caddy mockTailscale mockSleep mockNotify];
+      nativeBuildInputs = [bash coreutils jq caddy python3 mockTailscale mockSleep mockNotify];
     } ''
+      python - ${policyFixtures} <<'PY'
+      import configparser, json, sys
+      for case in json.load(open(sys.argv[1])):
+          ini = configparser.ConfigParser(interpolation=None)
+          ini.optionxform = str
+          ini.read_string('[DEFAULT]\n' + case['ini'])
+          assert ini['DEFAULT']['WORK_PATH'] == case['state']
+          assert ini['database']['DB_TYPE'] == case['database']
+          assert ini.getboolean('mailer', 'ENABLED') == case['mailer']
+          if case['name'] == 'compat':
+              assert case['state'] == '/data/apps/gitea'
+              assert case['database'] == 'sqlite3'
+              assert ini.getboolean('service', 'ENABLE_BASIC_AUTHENTICATION')
+              assert ini['security']['PASSWORD_HASH_ALGO'] == 'scrypt'
+          elif case['name'] == 'override':
+              assert case['state'] == '/srv/review-git' and case['database'] == 'postgres'
+              assert not ini.getboolean('service', 'ENABLE_BASIC_AUTHENTICATION')
+              assert ini['security']['MIN_PASSWORD_LENGTH'] == '16'
+      print('PASS: native/compatibility/override Gitea settings render and parse for both Linux architectures')
+      PY
       export COUNT_FILE="$TMPDIR/count" ARGV_FILE="$TMPDIR/argv" READY_FILE="$TMPDIR/ready"
       export FIXTURE_OFFLINE=1
       # A successful shell exit without READY does not activate a Type=notify unit;
@@ -292,7 +494,10 @@ in
       caddy adapt --adapter caddyfile --config ${caddyfile plain} > plain.json
       caddy adapt --adapter caddyfile --config ${caddyfile profile} > profile.json
       caddy adapt --adapter caddyfile --config ${caddyfile overridden} > overridden.json
+      caddy adapt --adapter caddyfile --config ${caddyfile public} > public.json
       jq -e '[.apps.http.servers[] | .automatic_https.disable_certificates // false] | all(. == false)' plain.json profile.json
       jq -e '.apps.tls.automation.policies | any(.get_certificate // [] | any(.via == "tailscale"))' profile.json
+      jq -e '[.apps.http.servers[].listen[] | select(endswith(":8890"))] | sort == ["100.100.100.10:8890", "[fd7a:115c:a1e0::10]:8890"]' profile.json
+      jq -e '[.apps.http.servers[].listen[] | select(endswith(":8890"))] | any(. == ":8890")' public.json
       touch "$out"
     ''

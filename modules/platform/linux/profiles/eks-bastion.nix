@@ -11,7 +11,7 @@
   contracts = import ../../../../lib/internal/file-contracts.nix {inherit lib;};
   credentialLibrary = lib.fileset.toSource {
     root = ../../../../tools;
-    fileset = lib.fileset.unions [../../../../tools/openvpn_credentials.py ../../../../tools/runtime_input.py];
+    fileset = lib.fileset.unions [../../../../tools/openvpn_client.py ../../../../tools/install_user_file.py ../../../../tools/runtime_input.py];
   };
   runtimeDir = "/run/openvpn-${cfg.openvpn.name}";
   quoteConfigPath = value: "\"${lib.replaceStrings ["\\" "\""] ["\\\\" "\\\""] (toString value)}\"";
@@ -28,12 +28,12 @@ in {
       configFile = mkOption {
         type = nullOr contracts.runtimeSecretPath;
         default = null;
-        description = "Runtime path to an OpenVPN client config on the bastion.";
+        description = "Root-private runtime OpenVPN client config. Protected root-owned directories/provider links and file references are checked before staging. Scripts, plugins, nested configs and output-file directives are unsupported; use a separately reviewed native service for those.";
       };
       authFile = mkOption {
         type = nullOr contracts.runtimeSecretPath;
         default = null;
-        description = "Runtime path to an OpenVPN auth-user-pass file. Used unless authUserFile and authPasswordFile are both set.";
+        description = "Root-private runtime path to a two-line OpenVPN auth-user-pass file. Mutually exclusive with split authUserFile/authPasswordFile.";
       };
       authUserFile = mkOption {
         type = nullOr contracts.runtimeSecretPath;
@@ -55,6 +55,11 @@ in {
         default = true;
         description = "Whether to start the OpenVPN client at boot.";
       };
+      allowUserServiceControl = mkOption {
+        type = bool;
+        default = false;
+        description = "Explicitly grant the selected user passwordless start/restart/reset-failed for this exact root-running service. Inputs remain protected independently of this grant.";
+      };
     };
   };
 
@@ -73,6 +78,20 @@ in {
       {
         assertion = !hasSplitOpenvpnAuth || (cfg.openvpn.authUserFile != null && cfg.openvpn.authPasswordFile != null);
         message = "modules.profiles.eks-bastion.openvpn.authUserFile and authPasswordFile must be set together.";
+      }
+      {
+        assertion = !cfg.openvpn.enable || !hasSplitOpenvpnAuth || cfg.openvpn.authFile == null;
+        message = "OpenVPN combined authFile and split credentials are mutually exclusive.";
+      }
+      {
+        assertion =
+          !cfg.openvpn.enable
+          || (config.services.openvpn.servers.${cfg.openvpn.name}.up
+            == ""
+            && config.services.openvpn.servers.${cfg.openvpn.name}.down == ""
+            && !config.services.openvpn.servers.${cfg.openvpn.name}.updateResolvConf
+            && config.services.openvpn.servers.${cfg.openvpn.name}.authUserPass == null);
+        message = "The protected OpenVPN client adapter does not support native hooks or inline credentials; use a separately reviewed native service.";
       }
       {
         assertion = !cfg.openvpn.enable || builtins.match "[a-zA-Z0-9][a-zA-Z0-9_.-]*" cfg.openvpn.name != null;
@@ -95,6 +114,7 @@ in {
 
     modules.shell.awscli2.enable = true;
     modules.shell.awscli2.saml.enable = mkDefault true;
+    modules.shell.awscli2.eks.enable = mkDefault true;
 
     environment.systemPackages = with pkgs; [
       openvpn
@@ -104,39 +124,38 @@ in {
       curl
     ];
 
-    services.openvpn.servers = let
-      splitAuth = cfg.openvpn.authUserFile != null && cfg.openvpn.authPasswordFile != null;
-      authFile =
-        if splitAuth
-        then "${runtimeDir}/auth-user-pass"
-        else cfg.openvpn.authFile;
-    in
-      mkIf cfg.openvpn.enable {
-        ${cfg.openvpn.name} = {
-          autoStart = cfg.openvpn.autoStart;
-          config = ''
-            config ${quoteConfigPath cfg.openvpn.configFile}
-            auth-user-pass ${quoteConfigPath authFile}
-            auth-nocache
-            ${optionalString (cfg.openvpn.privateKeyPasswordFile != null) "askpass ${quoteConfigPath cfg.openvpn.privateKeyPasswordFile}"}
-          '';
-        };
+    services.openvpn.servers = mkIf cfg.openvpn.enable {
+      ${cfg.openvpn.name} = {
+        autoStart = cfg.openvpn.autoStart;
+        config = ''
+          config ${quoteConfigPath "${runtimeDir}/client.conf"}
+        '';
       };
+    };
 
     systemd.services."openvpn-${cfg.openvpn.name}" = let
       splitAuth = cfg.openvpn.authUserFile != null && cfg.openvpn.authPasswordFile != null;
     in
-      mkIf (cfg.openvpn.enable && splitAuth) {
+      mkIf cfg.openvpn.enable {
+        serviceConfig = {
+          RuntimeDirectory = "openvpn-${cfg.openvpn.name}";
+          RuntimeDirectoryMode = "0700";
+        };
         preStart = ''
-          ${pkgs.coreutils}/bin/install -d -m 0700 ${escapeShellArg runtimeDir}
-          ${pkgs.python3}/bin/python ${credentialLibrary}/openvpn_credentials.py \
-            ${escapeShellArg cfg.openvpn.authUserFile} \
-            ${escapeShellArg cfg.openvpn.authPasswordFile} \
-            ${escapeShellArg "${runtimeDir}/auth-user-pass"}
+          ${pkgs.python3}/bin/python -I -c \
+            ${escapeShellArg "import sys; sys.path.insert(0, '${credentialLibrary}'); from openvpn_client import main; sys.exit(main())"} \
+            --config ${escapeShellArg cfg.openvpn.configFile} \
+            --destination ${escapeShellArg runtimeDir} \
+            ${
+            if splitAuth
+            then "--username-file ${escapeShellArg cfg.openvpn.authUserFile} --password-file ${escapeShellArg cfg.openvpn.authPasswordFile}"
+            else "--auth-file ${escapeShellArg cfg.openvpn.authFile}"
+          } \
+            ${optionalString (cfg.openvpn.privateKeyPasswordFile != null) "--key-password-file ${escapeShellArg cfg.openvpn.privateKeyPasswordFile}"}
         '';
       };
 
-    security.sudo.extraRules = mkIf cfg.openvpn.enable [
+    security.sudo.extraRules = mkIf (cfg.openvpn.enable && cfg.openvpn.allowUserServiceControl) [
       {
         users = [config.user.name];
         commands = [

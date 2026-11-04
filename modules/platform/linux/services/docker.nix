@@ -9,6 +9,7 @@
   inherit (hey.lib) mkBoolOpt';
 
   cfg = config.modules.services.docker;
+  native = config.virtualisation.docker;
 in {
   options.modules.services.docker = {
     enable = mkBoolOpt' false "Whether to enable Docker and install Docker client tools.";
@@ -29,20 +30,20 @@ in {
 
     assertions = [
       {
-        assertion = !(cfg.rootless && cfg.grantRootAccess);
+        assertion = !(native.rootless.enable && cfg.grantRootAccess);
         message = "Choose rootless Docker or explicit root-equivalent access, not both.";
       }
     ];
-    user.extraGroups = lib.optional cfg.grantRootAccess "docker";
+    user.extraGroups = lib.optional (cfg.grantRootAccess && native.enable) "docker";
 
     modules.shell.zsh.rcFiles = ["${hey.assetsDir}/docker/aliases.zsh"];
 
     virtualisation = {
       docker = {
-        enable = !cfg.rootless;
+        enable = mkDefault (!cfg.rootless);
         rootless = {
-          enable = cfg.rootless;
-          setSocketVariable = cfg.rootless;
+          enable = mkDefault cfg.rootless;
+          setSocketVariable = mkDefault native.rootless.enable;
         };
         # Installing Docker must not implicitly authorize scheduled deletion.
         # Consumers opt in through the native autoPrune options.

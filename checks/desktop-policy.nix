@@ -26,6 +26,66 @@
     };
   };
   host = outputs.darwinConfigurations.laptop;
+  linuxTerminalOutputs = nixi.lib.mkHostFlake {
+    inputs = {
+      self.outPath = ./fixtures/cli-host;
+      inherit nixi;
+    };
+    hosts = lib.genAttrs ["aarch64-linux" "x86_64-linux"] (system: {
+      inherit system;
+      module = _: {
+        config = {
+          user = {
+            name = "alice";
+            home = "/fixture/alice";
+          };
+          home.stateVersion = "26.05";
+          system.stateVersion = "26.05";
+        };
+      };
+    });
+  };
+  terminalContract = candidate: let
+    base = candidate.config;
+    enabled = candidate.extendModules {modules = [{modules.shell.alacritty.enable = true;}];};
+    disabled = (enabled.extendModules {modules = [{modules.shell.alacritty.enable = lib.mkForce false;}];}).config;
+    custom =
+      (enabled.extendModules {
+        modules = [
+          {
+            users.users.alice.shell = lib.mkForce candidate.pkgs.bashInteractive;
+            modules.shell.alacritty.extraConfig = ''
+              [window]
+              startup_mode = "Windowed"
+            '';
+          }
+        ];
+      }).config;
+    hasPackage = packages: lib.elem (toString candidate.pkgs.alacritty) (map toString packages);
+    userHasPackage = config: hasPackage config.users.users.alice.packages;
+    systemHasPackage = config: hasPackage config.environment.systemPackages;
+    settings = builtins.fromTOML (builtins.unsafeDiscardStringContext custom.home.configFile."alacritty/alacritty.toml".text);
+  in
+    !userHasPackage base
+    && !systemHasPackage base
+    && userHasPackage enabled.config
+    && systemHasPackage enabled.config == candidate.pkgs.stdenv.isDarwin
+    && !userHasPackage disabled
+    && !systemHasPackage disabled
+    && !(disabled.home.configFile ? "alacritty/alacritty.toml")
+    && userHasPackage custom
+    && systemHasPackage custom == candidate.pkgs.stdenv.isDarwin
+    && settings.window.startup_mode == "Windowed"
+    && settings.env.TERM == "alacritty"
+    && settings.env.TERMINFO == "${lib.getOutput "terminfo" candidate.pkgs.alacritty}/share/terminfo"
+    && (
+      if candidate.pkgs.stdenv.isDarwin
+      then
+        settings.terminal.shell.program
+        == "${candidate.pkgs.bashInteractive}${candidate.pkgs.bashInteractive.shellPath}"
+        && settings.terminal.shell.args == ["-l"]
+      else !(settings ? terminal)
+    );
   extend = module: (host.extendModules {modules = [module];}).config;
   untouched = extend {modules.desktop.dock.enable = true;};
   empty = extend {
@@ -98,6 +158,7 @@
     [''"$colima_fixture"'' "${coreutils}/bin/mkdir"]
     (builtins.unsafeDiscardStringContext customDockerHome.activation.createColimaHome.data));
 in
+  assert lib.assertMsg (lib.all terminalContract ([host] ++ builtins.attrValues linuxTerminalOutputs.nixosConfigurations)) "Alacritty must retain user/config/shell policy and register bundles only on Darwin";
   assert terminalSettings.window.startup_mode == "Fullscreen";
   assert !(disabledTerminalPreset.home.configFile ? "alacritty/alacritty.toml");
   assert lib.hasInfix "NSWindowTabbingEnabled" terminalPreset.system.activationScripts.postActivation.text;

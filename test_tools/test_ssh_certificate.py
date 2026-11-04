@@ -1,10 +1,12 @@
 """Real cryptographic and CLI tests; synthetic keys, no root or live services."""
+import fcntl
 import grp
 import json
 import os
 from pathlib import Path
 import pwd
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -77,6 +79,23 @@ class CertificateValidation(unittest.TestCase):
             self.assertEqual(certificate.main(["read-user-key", "--user", "fixture", "--group", "fixture", "--public-key", "/fixture"]), 0)
         self.assertEqual(events, ["drop", "read"])
 
+    def test_anonymous_ca_snapshot_is_private_and_closed_on_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(RuntimeError, "synthetic interruption"):
+                with certificate.anonymous_ca(b"synthetic-private-snapshot", directory) as fd:
+                    info = os.fstat(fd)
+                    self.assertEqual(stat.S_IMODE(info.st_mode), 0o600)
+                    self.assertEqual(info.st_nlink, 0)
+                    self.assertEqual(list(Path(directory).iterdir()), [])
+                    self.assertEqual(os.read(fd, 1024), b"synthetic-private-snapshot")
+                    if hasattr(os, "memfd_create"):
+                        self.assertTrue(fcntl.fcntl(fd, fcntl.F_GET_SEALS) & fcntl.F_SEAL_WRITE)
+                        with self.assertRaises(OSError):
+                            os.write(fd, b"replace")
+                    raise RuntimeError("synthetic interruption")
+            with self.assertRaises(OSError):
+                os.fstat(fd)
+
 
 class CertificateCLI(unittest.TestCase):
     def setUp(self):
@@ -125,6 +144,27 @@ class CertificateCLI(unittest.TestCase):
         self.destination.write_bytes(b"previous-certificate")
         self.run_tool(*self.arguments("host", source=True))
         self.assertEqual(self.destination.read_bytes(), data)
+
+    def test_signer_receives_anonymous_ca_descriptor(self):
+        signer = self.root / "descriptor-signer"
+        real_keygen = shutil.which("ssh-keygen")
+        signer.write_text(f'''#!{sys.executable}
+import os, stat, sys
+from pathlib import Path
+args = sys.argv[1:]
+source = args[args.index("-s")+1]
+assert source.startswith("/dev/fd/")
+fd = int(source.rsplit("/", 1)[1])
+info = os.fstat(fd)
+assert stat.S_ISREG(info.st_mode) and info.st_nlink == 0
+assert stat.S_IMODE(info.st_mode) == 0o600
+assert "ca" not in [p.name for p in Path(args[-1]).parent.iterdir()]
+os.execv({real_keygen!r}, [{real_keygen!r}, *args])
+''')
+        signer.chmod(0o755)
+        self.run_tool("--ssh-keygen", str(signer), *self.arguments())
+        certificate.validate_certificate(self.destination.read_bytes(),
+                                         (self.root / "key.pub").read_bytes(), "user", ["fixture"])
 
     def test_invalid_presigned_material_preserves_destination(self):
         self.keygen("-s", str(self.root / "ca"), "-I", "fixture", "-n", "fixture", "-V", "+1h", str(self.root / "other.pub"))

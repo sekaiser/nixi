@@ -181,8 +181,29 @@ class MemoryTests(unittest.TestCase):
         self.assertTrue(json.loads(out.getvalue())["result"]["isError"])
         self.assertNotIn(client.credential, out.getvalue())
 
+    @unittest.skipUnless(os.environ.get("NIXI_MEMORY_CORE") and os.environ.get("NIXI_MEMORY_NODE"),
+                         "Set NIXI_MEMORY_CORE and NIXI_MEMORY_NODE for real HTTP integrity checks")
+    def test_real_core_http_integrity(self):
+        core = Path(os.environ["NIXI_MEMORY_CORE"]).resolve().parent.parent
+        probe = Path(__file__).with_name("probe_memory_http.mjs")
+        result = subprocess.run([os.environ["NIXI_MEMORY_NODE"], str(probe), "--require-bundled", str(core)],
+            env={"HOME": str(self.root), "TMPDIR": str(self.root), "PATH": "/usr/bin:/bin"},
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=40)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["status"], "all-contexts-pass")
+        self.assertTrue(report["requireBundled"])
+        self.assertTrue(report["bundled"]["pass"])
+        self.assertEqual(len(report["packages"]), 3)
+        self.assertTrue(all(package["pass"] for package in report["packages"]))
+
     @unittest.skipUnless(os.environ.get("NIXI_MEMORY_CORE"), "Set NIXI_MEMORY_CORE for real Core integration")
     def test_real_core_auth_isolation_and_qualified_roundtrip(self):
+        # Software-emulated guests need a longer cold start than native hosts.
+        # Keep this opt-in test budget explicit and bounded; runtime is unchanged.
+        startup_seconds = int(os.environ.get("NIXI_TEST_CORE_STARTUP_SECONDS", "10"))
+        self.assertGreaterEqual(startup_seconds, 1)
+        self.assertLessEqual(startup_seconds, 180)
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
@@ -198,7 +219,8 @@ class MemoryTests(unittest.TestCase):
                 "--config", str(config)], stdout=log, stderr=log)
             try:
                 health = f"http://127.0.0.1:{port}/health"
-                for _ in range(100):
+                deadline = time.monotonic() + startup_seconds
+                while time.monotonic() < deadline:
                     if proc.poll() is not None:
                         self.fail("Synthetic Core startup failed: " + logfile.read_text()[-2000:])
                     try:
@@ -207,7 +229,8 @@ class MemoryTests(unittest.TestCase):
                     except (OSError, urllib.error.URLError):
                         time.sleep(0.1)
                 else:
-                    self.fail("Core did not become healthy")
+                    self.fail("Core did not become healthy within the test budget: "
+                              + logfile.read_text()[-2000:])
                 request = urllib.request.Request(f"http://127.0.0.1:{port}/v3/conversation/query",
                     data=b"{}", headers={"Content-Type": "application/json"})
                 with self.assertRaises(urllib.error.HTTPError) as error:

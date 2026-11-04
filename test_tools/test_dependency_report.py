@@ -60,7 +60,7 @@ class DependencyReport(unittest.TestCase):
         result = dependency.override_report(self.manifest, date.fromisoformat(entry["reviewBy"]))
         self.assertTrue(result[0]["reviewDue"])
         self.assertEqual(self.manifest, before)
-        self.assertEqual(result[0]["fixedVersion"], "3.6.4")
+        self.assertEqual(result[0]["fixedVersion"], entry["fixedVersion"])
 
     def test_override_schema_requires_sources_advisories_and_bounded_review(self):
         for change in ({"reviewBy": "2099-01-01"}, {"reviewed": "2099-01-01"},
@@ -94,7 +94,7 @@ class DependencyReport(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/dependency-maintenance.yml").read_text()
         for expected in ("github.event.repository.private == false", "NIXI_DEPENDENCY_MAINTENANCE == 'true'",
                          "contents: read", "persist-credentials: false", "tools/release.py export",
-                         "--output-lock-file", "--no-default-whitelist", "allow-import-from-derivation false",
+                         "--output-lock-file", "tools/dependency_scan.py", "allow-import-from-derivation false",
                          "retention-days: 7", "failed scan is not a clean report"):
             self.assertIn(expected, workflow)
         for forbidden in ("pull_request_target", "contents: write", "pull-requests: write", "secrets.",
@@ -102,6 +102,22 @@ class DependencyReport(unittest.TestCase):
             self.assertNotIn(forbidden, workflow)
         for action in re.findall(r"uses: ([^\s]+)", workflow):
             self.assertRegex(action, r"@[0-9a-f]{40}$")
+
+    def test_public_advisory_coverage_includes_platforms_and_npm(self):
+        import yaml
+        workflow = (ROOT / ".github/workflows/dependency-maintenance.yml").read_text()
+        self.assertIn("tools/dependency_scan.py", workflow)
+        for system in ("x86_64-linux", "aarch64-linux", "aarch64-darwin"):
+            self.assertIn(system, workflow)
+        self.assertIn("--npm", workflow)
+        self.assertIn("inventory.json", workflow)
+        jobs = yaml.safe_load(workflow)["jobs"]
+        self.assertEqual(set(jobs["scan"]["strategy"]["matrix"]["system"]),
+                         {"x86_64-linux", "aarch64-linux", "aarch64-darwin"})
+        self.assertFalse(jobs["scan"]["strategy"]["fail-fast"])
+        for job in jobs.values():
+            self.assertIn("github.event.repository.private == false", job["if"])
+            self.assertIn("NIXI_DEPENDENCY_MAINTENANCE == 'true'", job["if"])
 
 
 if __name__ == "__main__":

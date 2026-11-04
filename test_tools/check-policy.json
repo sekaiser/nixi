@@ -8,11 +8,13 @@
     "cli-contracts",
     "codex-skills",
     "desktop-policy",
+    "dependency-coverage",
     "doom-extra-config",
     "eks-integration",
     "gnupg",
     "home-file-ownership",
     "home-manager-integration",
+    "java-policy",
     "janet-vendor",
     "k3s-addon-manifests",
     "module-layout",
@@ -24,6 +26,7 @@
     "sops-darwin",
     "ssh-certificate-lifecycle",
     "ssh-certificate-tool",
+    "system-activation",
     "tmux-status",
     "user-file-installation",
     "workspace-layout",
@@ -34,6 +37,7 @@
     "dependency-overrides",
     "discovered-host-flake",
     "disko-opt-in",
+    "emacs-policy",
     "external-host-flake",
     "generic-darwin-policy-input",
     "generic-policy-input",
@@ -64,6 +68,8 @@
     "workspace-flake"
   ],
   "vm": [
-    "ssh-certificate-boot"
+    "openvpn-client-boot",
+    "ssh-certificate-boot",
+    "system-activation-boot"
   ]
 }

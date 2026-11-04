@@ -113,8 +113,10 @@
     else config.users.users.${config.user.name}.group;
   renderPrivateGitSecret = name: secret: let
     target = "${config.home.configDir}/git/${secret.target}";
+    receipt = "${cfg.secretTracking.receiptDirectory}/${builtins.hashString "sha256" secret.target}.json";
+    tracking = optionalString cfg.secretTracking.enable "--receipt ${escapeShellArg receipt} ";
   in ''
-    ${userFileInstaller}/bin/nixi-install-user-file ${escapeShellArg secret.sourceFile} ${escapeShellArg target} ${escapeShellArg secretOwner} ${escapeShellArg secretGroup} 0600
+    ${userFileInstaller}/bin/nixi-install-user-file ${tracking}${escapeShellArg secret.sourceFile} ${escapeShellArg target} ${escapeShellArg secretOwner} ${escapeShellArg secretGroup} 0600
   '';
   privateGitSecretActivationScripts =
     mapAttrsToList renderPrivateGitSecret cfg.secrets;
@@ -286,11 +288,31 @@ in {
       default = {};
       description = "Secret files installed below XDG_CONFIG_HOME/git during activation.";
     };
+    secretTracking = {
+      enable = mkOption {
+        type = bool;
+        default = false;
+        description = "Opt into private runtime installation receipts and the manual retirement CLI. Removing a declaration never deletes an installed copy.";
+      };
+      receiptDirectory = mkOption {
+        type = contracts.runtimeSecretPath;
+        default = "${config.home.stateDir}/nixi/git-secret-copies";
+        description = "Private runtime receipts for explicitly tracked Git secret copies. No existing copy is adopted or retired automatically.";
+      };
+    };
   };
 
   config = mkIf cfg.enable (mkMerge [
     {
       assertions = [
+        {
+          assertion = !cfg.secretTracking.enable || lib.hasPrefix "${config.home.dir}/" cfg.secretTracking.receiptDirectory;
+          message = "Git secret tracking receipts must be inside the selected user's home.";
+        }
+        {
+          assertion = !cfg.secretTracking.enable || contracts.disjointPaths ([cfg.secretTracking.receiptDirectory] ++ map (target: "${config.home.configDir}/git/${target}") (secretTargets ++ attrNames cfg.profileFiles ++ ["config"]));
+          message = "Git secret tracking receipts must not overlap Git config, secret or profile destinations.";
+        }
         {
           assertion = all (secret: secret.sourceFile == null || contracts.absolute secret.sourceFile) (builtins.attrValues cfg.secrets);
           message = "Git secret sourceFile values must be canonical absolute runtime paths.";
@@ -340,7 +362,8 @@ in {
         ++ optional cfg.tools.onefetch pkgs.onefetch
         ++ optional cfg.tools.gitlint pkgs.gitlint
         ++ optional cfg.tools.delta pkgs.delta
-        ++ optional cfg.tools.difftastic pkgs.difftastic;
+        ++ optional cfg.tools.difftastic pkgs.difftastic
+        ++ optional cfg.secretTracking.enable userFileInstaller;
 
       home.configFile = staticGitConfig // renderedProfileFiles;
 

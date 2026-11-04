@@ -5,56 +5,65 @@
   coreutils,
   python3,
   awscli2,
+  janet,
+  jpm,
+  git,
+  callPackage,
   writeText,
   runCommand,
   ...
 }: let
+  deps = callPackage ../packages/hey-janet-deps.nix {inherit janet jpm;};
+  supervisor = callPackage ../packages/process-supervisor.nix {};
+  runtimePython = callPackage ../packages/hey-python.nix {};
   outputs = nixi.lib.mkHostFlake {
     inputs = {
       self.outPath = ./fixtures/cli-host;
       inherit nixi;
     };
-    hosts = lib.genAttrs ["linux" "darwin"] (platform: {
-      system =
-        if platform == "linux"
-        then "x86_64-linux"
-        else "aarch64-darwin";
-      module = _: {
-        config = {
-          user = {
-            name = "alice";
-            home = "/fixture/alice";
-          };
-          home.stateVersion = "26.05";
-          system.stateVersion =
-            if platform == "linux"
-            then "26.05"
-            else 6;
-          modules.shell.awscli2 = {
-            enable = true;
-            profiles = {
-              work.ssoSession = "session";
-              raw.extraConfig.sso_session = "session";
-              legacy.extraConfig.sso_start_url = "https://example.invalid/start";
-              disabled = {
-                ssoSession = "session";
-                extraConfig.sso_session = "";
-              };
-              plain = {};
+    hosts =
+      lib.mapAttrs (platform: system: {
+        inherit system;
+        module = _: {
+          config = {
+            user = {
+              name = "alice";
+              home = "/fixture/alice";
             };
-            ssoSessions.session.startUrl = "https://example.invalid/start";
-            saml.accounts.legacy = {
-              awsProfile = "original";
-              extraConfig.aws_profile = "mapped-profile";
-              passwordFile = "/run/secrets/password";
+            home.stateVersion = "26.05";
+            system.stateVersion =
+              if lib.hasSuffix "-darwin" system
+              then 6
+              else "26.05";
+            modules.shell.awscli2 = {
+              enable = true;
+              profiles = {
+                work.ssoSession = "session";
+                raw.extraConfig.sso_session = "session";
+                legacy.extraConfig.sso_start_url = "https://example.invalid/start";
+                disabled = {
+                  ssoSession = "session";
+                  extraConfig.sso_session = "";
+                };
+                plain = {};
+              };
+              ssoSessions.session.startUrl = "https://example.invalid/start";
+              saml.accounts.legacy = {
+                awsProfile = "original";
+                extraConfig.aws_profile = "mapped-profile";
+                passwordFile = "/run/secrets/password";
+              };
             };
           };
         };
+      }) {
+        linux = "x86_64-linux";
+        linuxArm = "aarch64-linux";
+        darwin = "aarch64-darwin";
       };
-    });
   };
   linux = outputs.nixosConfigurations.linux;
-  hosts = [linux outputs.darwinConfigurations.darwin];
+  hosts = [linux outputs.nixosConfigurations.linuxArm outputs.darwinConfigurations.darwin];
   renderIni = import ../lib/internal/aws-ini.nix {inherit lib;};
   acceptedIni = name: values: extra: (builtins.tryEval (renderIni "profile " name values extra)).success;
   invalidNames = ["" "work profile" "review\n[profile injected]" "review]" "[review" "re\"view" "re'view" "re\\view" "review\tname"];
@@ -115,6 +124,72 @@
     })
     hosts));
   metadata = host: (builtins.fromJSON host.config.home.configFile."hey/aws.json".text).awscli2;
+  awsPolicy = host: let
+    withSettings = settings: host.extendModules {modules = [settings];};
+    bare = withSettings {modules.shell.awscli2.enable = lib.mkForce false;};
+    eks = withSettings {
+      modules.shell.awscli2.eks = {
+        enable = true;
+        clusters.fixture.profile = "work";
+      };
+    };
+    saml = withSettings {modules.shell.awscli2.saml.enable = true;};
+    disabled = eks.extendModules {modules = [{modules.shell.awscli2.eks.enable = lib.mkForce false;}];};
+    foreign = disabled.extendModules {
+      modules = [
+        {
+          user.packages = [host.pkgs.kubectl];
+          home.configFile."k9s/config.yaml".text = "synthetic consumer configuration";
+        }
+      ];
+    };
+    names = variant: map lib.getName variant.config.users.users.alice.packages;
+    added = variant: lib.sort builtins.lessThan (lib.subtractLists (names bare) (names variant));
+    expected = packages: lib.sort builtins.lessThan (map lib.getName packages);
+    tools = with host.pkgs; [kubectl k9s kubectx stern];
+    k9sFiles = variant: lib.filter (lib.hasPrefix "k9s/") (builtins.attrNames variant.config.home.configFile);
+    noKubernetes = variant:
+      !lib.any (name: builtins.elem name (names variant)) (map lib.getName tools)
+      && k9sFiles variant == [];
+  in
+    !host.config.modules.shell.awscli2.eks.enable
+    && !(bare.config.home.configFile ? "aws/config")
+    && !(bare.config.home.configFile ? "hey/aws.json")
+    && !(bare.config.home.file ? ".saml2aws")
+    && !lib.any (name: builtins.elem name (names bare)) (map lib.getName ([host.pkgs.awscli2 host.pkgs.saml2aws] ++ tools))
+    && noKubernetes host
+    && noKubernetes saml
+    && noKubernetes disabled
+    && added host == expected [host.pkgs.awscli2]
+    && added saml == expected [host.pkgs.awscli2 host.pkgs.saml2aws]
+    && added eks == expected ([host.pkgs.awscli2] ++ tools)
+    && added disabled == added host
+    && !((metadata host).eksEnabled)
+    && !((metadata host).samlEnabled)
+    && (metadata saml).samlEnabled
+    && !((metadata saml).eksEnabled)
+    && (metadata eks).eksEnabled
+    && !((metadata eks).samlEnabled)
+    && (metadata eks).eksClusters.fixture.profile == "work"
+    && k9sFiles eks == ["k9s/aliases.yaml" "k9s/config.yaml" "k9s/hotkeys.yaml" "k9s/plugins.yaml"]
+    && !(disabled.config.home.file ? ".saml2aws")
+    && added foreign == expected [host.pkgs.awscli2 host.pkgs.kubectl]
+    && foreign.config.home.configFile."k9s/config.yaml".text == "synthetic consumer configuration"
+    && !((metadata foreign).eksEnabled)
+    && (builtins.fromJSON host.config.home.configFile."hey/aws.json".text).awscli2.ssoProfiles == ["legacy" "raw" "work"];
+  bastionPolicy = host: let
+    bastion = host.extendModules {modules = [{modules.profiles.eks-bastion.enable = true;}];};
+    disabled = bastion.extendModules {modules = [{modules.shell.awscli2.eks.enable = false;}];};
+    names = variant: map lib.getName variant.config.users.users.alice.packages;
+    tools = map lib.getName (with host.pkgs; [kubectl k9s kubectx stern]);
+  in
+    (metadata bastion).eksEnabled
+    && (metadata bastion).samlEnabled
+    && lib.all (name: builtins.elem name (names bastion)) tools
+    && !((metadata disabled).eksEnabled)
+    && (metadata disabled).samlEnabled
+    && !lib.any (name: builtins.elem name (names disabled)) tools
+    && !(disabled.config.home.configFile ? "k9s/config.yaml");
   vpnModule.modules.profiles.eks-bastion = {
     enable = true;
     openvpn = {
@@ -127,12 +202,29 @@
     };
   };
   vpn = (linux.extendModules {modules = [vpnModule];}).config;
+  delegated =
+    (linux.extendModules {
+      modules = [vpnModule {modules.profiles.eks-bastion.openvpn.allowUserServiceControl = true;}];
+    }).config;
   paths = vpn.modules.profiles.eks-bastion.openvpn;
-  sudoCommands =
+  userCommands = cfg:
     lib.concatMap (rule: rule.commands)
-    (lib.filter (rule: builtins.elem "alice" rule.users) vpn.security.sudo.extraRules);
+    (lib.filter (rule: builtins.elem "alice" rule.users) cfg.security.sudo.extraRules);
+  sudoCommands = userCommands delegated;
   cliFixtures = writeText "eks-cli-fixtures.json" (builtins.toJSON {
     inherit sudoCommands;
+    authOnlyMetadata = lib.listToAttrs (map (host:
+      lib.nameValuePair host.pkgs.stdenv.hostPlatform.system (metadata (host.extendModules {
+        modules = [
+          {
+            modules.shell.awscli2.saml = {
+              enable = true;
+              accounts.interactive = {};
+            };
+          }
+        ];
+      })))
+    hosts);
     vpnCluster = {
       name = "vpn";
       profile = "work";
@@ -148,6 +240,7 @@
           modules = [
             {
               modules.shell.awscli2 = {
+                eks.enable = true;
                 saml = {
                   enable = true;
                   accounts = {
@@ -173,26 +266,6 @@
         }));
   });
   runtimeDir = "/run/openvpn-fixture";
-  # Exercise the evaluated preStart on the native runner, with dummy secrets.
-  # Do not build Linux executables on Darwin or touch /run.
-  script = writeText "openvpn-prestart-fixture" (lib.replaceStrings
-    [
-      "${linux.pkgs.coreutils}/bin/install"
-      "${linux.pkgs.python3}/bin/python"
-      (lib.escapeShellArg paths.authUserFile)
-      (lib.escapeShellArg paths.authPasswordFile)
-      (lib.escapeShellArg "${runtimeDir}/auth-user-pass")
-      (lib.escapeShellArg runtimeDir)
-    ]
-    [
-      "${coreutils}/bin/install"
-      "${python3}/bin/python"
-      ''"$FIXTURE_ROOT/user name"''
-      ''"$FIXTURE_ROOT/password file"''
-      ''"$FIXTURE_ROOT/runtime/auth-user-pass"''
-      ''"$FIXTURE_ROOT/runtime"''
-    ]
-    (builtins.unsafeDiscardStringContext vpn.systemd.services.openvpn-fixture.preStart));
   invalid = overrides:
     (linux.extendModules {
       modules = [vpnModule {modules.profiles.eks-bastion.openvpn = lib.mapAttrs (_: lib.mkForce) overrides;}];
@@ -213,6 +286,8 @@
     })
     .config;
 in
+  assert lib.assertMsg (lib.all awsPolicy hosts) "AWS CLI/EKS opt-in matrix failed";
+  assert lib.assertMsg (lib.all bastionPolicy [linux outputs.nixosConfigurations.linuxArm]) "EKS bastion opt-in/override matrix failed";
   assert lib.all (name: !(acceptedIni name {} {})) invalidNames;
   assert lib.all (key: !(acceptedIni "review" {} {${key} = "value";})) invalidKeys;
   assert lib.all (value: !(acceptedIni "review" {region = value;} {})) invalidValues;
@@ -223,6 +298,30 @@ in
     output = null;
   } {};
   assert lib.all rejectsStructuredIni hosts;
+  # An inline username is public store content even from private source. A
+  # runtime username path belongs only in the runtime manifest, not the INI.
+  assert lib.all (host: let
+    cfg =
+      (host.extendModules {
+        modules = [
+          {
+            modules.shell.awscli2.saml = {
+              enable = true;
+              accounts.runtime.usernameFile = "/run/secrets/synthetic-username";
+            };
+          }
+        ];
+      }).config;
+    account = (metadata {config = cfg;}).samlAccountDetails.runtime;
+    usernameOption = (host.options.modules.shell.awscli2.saml.accounts.type.getSubOptions []).username;
+  in
+    account.usernameFile
+    == "/run/secrets/synthetic-username"
+    && !lib.hasInfix "/run/secrets/synthetic-username" cfg.home.file.".saml2aws".text
+    && !lib.hasInfix "username =" cfg.home.file.".saml2aws".text
+    && lib.hasInfix "Nix store" usernameOption.description
+    && lib.hasInfix "usernameFile" usernameOption.description)
+  hosts;
   assert lib.all (host: let
     info = metadata host;
     combined = host.extendModules {
@@ -245,7 +344,7 @@ in
     && info.ssoProfiles
     == ["legacy" "raw" "work"]
     && !info.samlEnabled
-    && info.eksEnabled
+    && !info.eksEnabled
     && info.samlAccountDetails.legacy.awsProfile == "mapped-profile"
     && info.samlAccountDetails.legacy.passwordFileFormat == "password"
     && (metadata combined).samlAccountDetails.legacy.passwordFileFormat == "username-password"
@@ -253,9 +352,17 @@ in
     && enabled.samlEnabled
     && !enabled.eksEnabled)
   hosts;
-  assert lib.hasInfix ''config "/fixture/client config \"quoted\".ovpn"'' vpn.services.openvpn.servers.fixture.config;
-  assert lib.hasInfix ''auth-user-pass "/run/openvpn-fixture/auth-user-pass"'' vpn.services.openvpn.servers.fixture.config;
-  assert lib.hasInfix ''askpass "/fixture/key password"'' vpn.services.openvpn.servers.fixture.config;
+  assert lib.hasInfix ''config "/run/openvpn-fixture/client.conf"'' vpn.services.openvpn.servers.fixture.config;
+  assert !lib.hasInfix "/fixture/" vpn.services.openvpn.servers.fixture.config;
+  assert lib.all (value: lib.hasInfix (lib.escapeShellArg value) vpn.systemd.services.openvpn-fixture.preStart)
+  [paths.configFile paths.authUserFile paths.authPasswordFile paths.privateKeyPasswordFile runtimeDir];
+  assert lib.hasInfix "from openvpn_client import main" vpn.systemd.services.openvpn-fixture.preStart;
+  assert vpn.systemd.services.openvpn-fixture.serviceConfig.RuntimeDirectory == "openvpn-fixture";
+  assert vpn.systemd.services.openvpn-fixture.serviceConfig.RuntimeDirectoryMode == "0700";
+  assert userCommands vpn == [];
+  assert rejects {authFile = "/fixture/combined";} "mutually exclusive";
+  assert lib.any (a: !a.assertion && lib.hasInfix "native hooks" a.message)
+  (linux.extendModules {modules = [vpnModule {services.openvpn.servers.fixture.up = "echo unsafe";}];}).config.assertions;
   assert rejects {name = "../escape";} "simple service name";
   assert !(builtins.tryEval (invalid {configFile = "relative";}).modules.profiles.eks-bastion.openvpn.configFile).success;
   assert !(builtins.tryEval (invalid {authPasswordFile = "/fixture/password\ninjected";}).modules.profiles.eks-bastion.openvpn.authPasswordFile).success;
@@ -268,12 +375,7 @@ in
     runCommand "eks-integration-check" {
       src = ../.;
       passthru = {inherit cliFixtures;};
-      nativeBuildInputs = [bash coreutils python3 awscli2];
-      # Keep the helper referenced after stripping foreign executable contexts.
-      helper = lib.fileset.toSource {
-        root = ../tools;
-        fileset = lib.fileset.unions [../tools/openvpn_credentials.py ../tools/runtime_input.py];
-      };
+      nativeBuildInputs = [bash coreutils python3 awscli2 janet git];
     } ''
       export PYTHONDONTWRITEBYTECODE=1
       export HOME="$TMPDIR/isolated-home"
@@ -305,20 +407,18 @@ in
           assert dict(saml["legacy"]) == {"aws_profile": "mapped-profile", "skip_verify": "false", "timeout": "42", "username": "fixture@example.invalid"}
       PY
       python "$src/test_tools/test_openvpn_credentials.py"
-      export FIXTURE_ROOT="$TMPDIR/credentials with spaces"
-      mkdir -p "$FIXTURE_ROOT"
-      printf '%s' 'fixture-user' > "$FIXTURE_ROOT/user name"
-      printf '%s' 'fixture-password' > "$FIXTURE_ROOT/password file"
-      bash -eu ${script}
-      printf 'fixture-user\nfixture-password\n' > expected
-      cmp expected "$FIXTURE_ROOT/runtime/auth-user-pass"
-      test "$(stat -c '%a' "$FIXTURE_ROOT/runtime/auth-user-pass")" = 400
-      test "$(stat -c '%a' "$FIXTURE_ROOT/runtime")" = 700
-      printf 'invalid\nsecond line\n' > "$FIXTURE_ROOT/password file"
-      if bash -eu ${script}; then
-        echo 'Invalid credentials unexpectedly accepted' >&2
-        exit 1
-      fi
-      cmp expected "$FIXTURE_ROOT/runtime/auth-user-pass"
+      # Synthetic descriptor/permission and parser tests; root/systemd behavior
+      # still requires a native Linux VM acceptance run.
+      python "$src/test_tools/test_openvpn_client.py"
+      export JANET_PATH="${deps}/lib"
+      export JANET_TREE="${deps}"
+      export HEY_PROCESS_SUPERVISOR="${supervisor}/bin/nixi-process-supervisor"
+      export HEY_RUNTIME_PYTHON="${runtimePython}/bin/python3"
+      export NIXI_EKS_FIXTURES="${cliFixtures}"
+      python "$src/test_tools/run_cli_tests.py" \
+        test_eks_nix_generated_metadata_and_sudo_policy \
+        test_eks_login_selects_provider_and_rejects_unknown_or_ambiguous_names \
+        test_eks_doctor_only_requires_enabled_authentication_tools \
+        test_eks_nullable_metadata_and_invalid_types
       touch "$out"
     ''

@@ -4,6 +4,7 @@
   coreutils,
   bash,
   python3,
+  zsh,
   callPackage,
   writeShellScriptBin,
   writeText,
@@ -16,6 +17,7 @@
   fakeJanet = writeShellScriptBin "janet" ''
     exec ${python3}/bin/python3 -c 'import json, os, sys; print(json.dumps({"env": dict(os.environ), "argv": sys.argv[1:]}))' "$@"
   '';
+  fakeJava = writeShellScriptBin "java-session-fixture" ''exit 0'';
   launcherArgs = {
     heyDir = literalPath;
     heyBinDir = "${literalPath}/bin";
@@ -57,8 +59,14 @@
           modules.profiles.zsh-workstation.enable = true;
           hey.enable = true;
           modules.profiles.go-workstation.enable = true;
+          modules.profiles.java-workstation.enable = true;
+          modules.dev.java.package = fakeJava;
           modules.profiles.tmux-workstation.enable = true;
           modules.shell.awscli2.enable = true;
+          modules.agents.codex = {
+            enable = true;
+            codexHome = "/fixture/alice/custom codex";
+          };
           modules.services.docker.enable = true;
           modules.editors.default = "selected-editor";
           env.NIXI_LITERAL = literal;
@@ -79,6 +87,19 @@
     });
   };
   hosts = [outputs.nixosConfigurations.linux outputs.darwinConfigurations.darwin];
+  managedNix = writeShellScriptBin "nix" ''echo managed-client'';
+  installerNix = writeShellScriptBin "nix" ''echo stale-installer-client'';
+  installerBootstrap = writeText "synthetic-installer-bootstrap" ''
+    export PATH=${installerNix}/bin:"$PATH"
+  '';
+  darwinShellInit = writeText "darwin-hey-path-order" ''
+    ${lib.replaceStrings
+      ["/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"]
+      ["${installerBootstrap}"]
+      (builtins.unsafeDiscardStringContext outputs.darwinConfigurations.darwin.config.programs.zsh.shellInit)}
+    test "$(command -v nix)" = ${managedNix}/bin/nix
+    test "$(nix)" = managed-client
+  '';
   shellVariants = host:
     map (enabled:
       host.extendModules {
@@ -134,19 +155,28 @@
         test "$TMUXIFIER" = /custom/data/tmuxifier
         test "$AWS_CONFIG_FILE" = /custom/config/aws/config
         test "$DOCKER_CONFIG" = /custom/config/docker
+        test "$CODEX_HOME" = '/fixture/alice/custom codex'
+        test "$JAVA_HOME" = ${lib.escapeShellArg (toString fakeJava)}
+        test "$JDK_HOME" = ${lib.escapeShellArg (toString fakeJava)}
         case ":$PATH:" in *:/custom/data/tmuxifier/bin:*) ;; *) exit 1 ;; esac
       ''
-      else ''
-        test "$XDG_CONFIG_HOME" = /fixture/bob/.config
-        test -z "''${ZDOTDIR-}"
-        test -z "''${ZGEN_DIR-}"
-        test -z "''${HISTFILE-}"
-        test -z "''${_ZO_DATA_DIR-}"
-        test -z "''${GOPATH-}"
-        test -z "''${TMUX_HOME-}"
-        test -z "''${AWS_CONFIG_FILE-}"
-        test -z "''${DOCKER_CONFIG-}"
-      '';
+      else
+        lib.optionalString (user == "bob") ''
+          test "$XDG_CONFIG_HOME" = /fixture/bob/.config
+        ''
+        + ''
+          test -z "''${ZDOTDIR-}"
+          test -z "''${ZGEN_DIR-}"
+          test -z "''${HISTFILE-}"
+          test -z "''${_ZO_DATA_DIR-}"
+          test -z "''${GOPATH-}"
+          test -z "''${TMUX_HOME-}"
+          test -z "''${AWS_CONFIG_FILE-}"
+          test -z "''${DOCKER_CONFIG-}"
+          test -z "''${CODEX_HOME-}"
+          test -z "''${JAVA_HOME-}"
+          test -z "''${JDK_HOME-}"
+        '';
   in
     writeText "shell-${host.pkgs.stdenv.hostPlatform.system}-${user}" (script
       + "\nset -eu\n"
@@ -203,6 +233,11 @@ in
   assert lib.all (host: lib.all (name: !(builtins.hasAttr name host.config.environment.variables) && !(builtins.hasAttr name host.config.env)) ["ZDOTDIR" "ZGEN_DIR" "HISTFILE" "_ZO_DATA_DIR"]) hosts;
   assert lib.all (host: !(host.config.env ? EDITOR) && host.config.home-manager.users.alice.home.sessionVariables.EDITOR == "selected-editor") hosts;
   assert lib.all (host:
+    !(host.config.env ? CODEX_HOME)
+    && !(host.config.environment.variables ? CODEX_HOME)
+    && host.config.home-manager.users.alice.home.sessionVariables.CODEX_HOME == "/fixture/alice/custom codex")
+  hosts;
+  assert lib.all (host:
     !(lib.hasInfix "*.zwc" (host.config.system.activationScripts.postActivation.text or ""))
     && host.config.home-manager.users.alice.home.activation ? cleanupLegacyZshCaches
     && host.config.home-manager.users.alice.home.sessionVariables.HEY_TMUX_SELECTOR == lib.getExe host.config.modules.shell.tmux.sessionSelector)
@@ -256,10 +291,17 @@ in
               ${bash}/bin/bash --noprofile --norc ${fixture variant.host user (
               if user == "alice"
               then variant.expected
-              else "bob-editor"
+              else if user == "bob"
+              then "bob-editor"
+              else variant.host.config.environment.variables.EDITOR or "inherited-editor"
             )}
-          '') ["alice" "bob"])
+          '') ["alice" "bob" "root"])
         (editorVariants host))
       hosts}
+      # A synthetic old installer is present. Native system PATH ordering must
+      # survive Hey's shell initialization; never source the real installer.
+      ${coreutils}/bin/env -i HOME=/fixture/alice \
+        PATH=${managedNix}/bin:${installerNix}/bin \
+        ${zsh}/bin/zsh -fe ${darwinShellInit}
       touch "$out"
     ''

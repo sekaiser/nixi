@@ -1,12 +1,21 @@
 {
   systems = ["aarch64-linux" "x86_64-linux"];
   package = {
+    lib,
     nixi,
     testers,
+    allowSoftwareEmulation ? false,
     ...
   }:
     testers.runNixOSTest {
       name = "ssh-certificate-boot";
+      requiredFeatures = lib.optionalAttrs allowSoftwareEmulation {
+        kvm = false;
+        apple-virt = false;
+        nixos-test = false;
+      };
+      qemu.forceAccel = !allowSoftwareEmulation;
+      globalTimeout = 420;
       node.specialArgs.hey = {
         lib = nixi.lib;
         frameworkDir = toString ../.;

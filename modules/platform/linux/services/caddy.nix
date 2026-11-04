@@ -16,7 +16,7 @@ in {
   config = mkIf cfg.enable {
     services.caddy = {
       enable = lib.mkDefault true;
-      openFirewall = lib.mkDefault true;
+      openFirewall = lib.mkDefault false;
     };
   };
 }

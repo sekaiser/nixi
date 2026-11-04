@@ -90,13 +90,15 @@ and run `test_tools/test_agent_memory.py` with `NIXI_MEMORY_CORE` set to its bin
 path outside the Nix build sandbox. The test uses synthetic state and an ephemeral
 loopback port, then terminates the service. Darwin's build sandbox forbids such
 listeners; it is not relaxed for this check.
+Set `NIXI_MEMORY_NODE` to that Core package's Node executable too to enable the
+strict HTTP integrity test. With both variables set, all 14 tests run; the HTTP
+test uses data URLs and requires the bundled implementation to pass as well.
 
 The source revision and npm dependency lock are pinned. OpenTelemetry versions
 are adjusted within this package for GHSA-8988-4f7v-96qf and GHSA-45rx-2jwx-cxfr;
-telemetry remains disabled. The dependency audit reported zero known npm
-vulnerabilities on 2026-10-13; this is not a guarantee of absence of defects.
-Package updates require
-reviewing both, regenerating the dependency hash and rerunning tests. No global
-dependency override is introduced. The package includes upstream production
-dependencies only, without the OpenClaw/llama optional peers, development tools,
-or lifecycle scripts. This remains experimental, not a complete security audit.
+telemetry remains disabled. The production lock selects
+Undici 8.12.3 and two nested 6.29.1 copies; the stable snapshot provides Node
+24.22.1 with bundled Undici 7.30.1. Mandatory native `agent-memory` CI checks
+strict integrity rejection for all npm copies and Node's global fetch. See
+[dependency versions and scope](dependencies.md#memorycore-http-dependencies).
+A source update does not replace an already running Core process.

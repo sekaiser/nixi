@@ -49,13 +49,13 @@ in {
       environmentFile = "/var/tailscale/ip";
       extraFlags = ["--kubelet-arg=register-with-taints=node.cilium.io/agent-not-ready:NoExecute"];
     };
-    systemd.services.k3s = {
+    systemd.services.k3s = mkIf config.services.k3s.enable {
       after = ["tailscale-fetch-ip.service"];
       requires = ["tailscale-fetch-ip.service"];
     };
     networking.firewall = {
       checkReversePath = "loose";
-      trustedInterfaces = ["tailscale0" "cilium_host" "cilium_net" "lxc+"];
+      trustedInterfaces = ["tailscale0"] ++ lib.optionals config.services.k3s.enable ["cilium_host" "cilium_net" "lxc+"];
     };
     assertions = [
       {

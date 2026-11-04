@@ -17,7 +17,7 @@ buildNpmPackage {
   };
   sourceRoot = "source/MemoryCore";
   nodejs = nodejs_24;
-  npmDepsHash = "sha256-27nrhbOkjUeuM3/4SvQdq63uYlmD6VenaLGxnECQ78Y=";
+  npmDepsHash = "sha256-RhFwt93rDELzSA2e0i3s0V6YlHYtWHum+u9nlXZWyWY=";
   # Upstream ships no dependency lock. Lock only the standalone runtime;
   # exclude development tools and optional OpenClaw/llama peer packages.
   postPatch = ''

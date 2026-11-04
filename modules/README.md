@@ -89,14 +89,20 @@ Intentional shell expressions belong in shell initialization, not `env` strings.
 The GnuPG module delegates homedir and agent ownership to Home Manager, with
 Nix-built platform-specific pinentry; it does not require Homebrew.
 
-OMP uses Nixpkgs' YAML serializer with independently defaulted theme fields;
-explicit model roles override optional Codex defaults. RTK initialization passes
-the selected Codex directory directly instead of depending on ambient shell state.
+Generic OMP enablement leaves settings user-managed and selects no preferences.
+The explicit `omp-workstation` preset retains the former managed themes and
+Codex-dependent provider/model defaults. Managed settings use Nixpkgs' YAML
+serializer and a private writable user file; explicit model roles override the
+optional Codex role. RTK initialization passes the selected Codex directory
+directly instead of depending on ambient shell state.
 
 The generic Caddy and Tailscale modules do not assume one another. Select
-`modules.profiles.gitea-tailscale.enable` for Gitea's loopback backend, public
-HTTPS listener and Tailscale certificate permissions. This profile does not
-disable certificate automation for other Caddy virtual hosts. Tailscale's
+`modules.profiles.gitea-tailscale.enable` for Gitea's loopback backend, explicit
+tailnet/public HTTPS exposure and Tailscale certificate permissions. This profile
+retains the former deployment defaults through `gitea-compatibility`; direct
+adapter users must select compatibility or native deployment policy explicitly.
+Neither choice migrates data. This profile does not disable certificate
+automation for other Caddy virtual hosts. Tailscale's
 authentication lifecycle belongs to the native NixOS module; Nixi's optional
 runtime auth-key path is passed through systemd credentials, never shell source.
 See [migration notes](../docs/migration.md) for service-name and deployment changes.

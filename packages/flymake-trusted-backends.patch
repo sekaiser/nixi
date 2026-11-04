@@ -1,0 +1,25 @@
+Subject: [PRIVATE SECURITY PROPOSAL] Preserve trusted backend selection in GNU ELPA Flymake 1.4.7
+License: GPL-3.0-or-later (changes to GNU Emacs)
+
+Backport the inherited GNU31.1 Nixpkgs all-backend trusted-content guard.
+Scope: the selected Emacs31.1 runtime provides trusted-content-p.
+No empty-region, callback or disabled-diagnostic functional changes.
+
+--- a/flymake.el
++++ b/flymake.el
+@@ -1325,8 +1325,13 @@
+             (flymake--state-disabled state) nil
+             (flymake--state-reported-p state) nil))
+     (condition-case-unless-debug err
+-        (apply backend (flymake-make-report-fn backend run-token)
+-               args)
++        (if (or (trusted-content-p) (function-get backend 'flymake-always-safe))
++            (apply backend (flymake-make-report-fn backend run-token)
++                   args)
++          (message "Disabling %S in %s (untrusted content)"
++                   backend (buffer-name))
++          (user-error "Disabling %S in %s (untrusted content)"
++                      backend (buffer-name)))
+       (error
+        (flymake--disable-backend backend err)))))
+ 

@@ -68,6 +68,12 @@ in
     # A present script with a missing shebang interpreter reports ENOENT too.
     read -r judgeShebang < "${deps}/bin/judge"
     test "$judgeShebang" = '#!${janet}/bin/janet'
+    python "$src/test_tools/run_cli_tests.py" \
+      test_lazy_dispatch_broken_commands_do_not_block_help_or_unrelated_commands \
+      test_lazy_dispatch_aliases_forward_arguments_status_and_complete_registry \
+      test_lazy_dispatch_missing_module_does_not_fall_back \
+      test_lazy_command_loader_caches_import_and_rejects_missing_registration \
+      test_external_dispatch_preserves_status_arguments_and_dry_runs
     python "$src/test_tools/run_contract_tests.py"
     touch "$out"
   ''

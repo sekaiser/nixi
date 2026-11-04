@@ -55,7 +55,12 @@ class ConsumerCLI(unittest.TestCase):
     def isolate_nix(self):
         self.env["DOTFILES_HOME"] = str(self.consumer.resolve())
         self.env["NIX_REMOTE"] = str(self.root.resolve() / "nix-store")
-        self.env["NIX_CONFIG"] = "experimental-features = nix-command flakes\n"
+        self.env["NIX_CONFIG"] = "experimental-features = nix-command flakes\nnix-path =\n"
+        self.env["NIX_USER_CONF_FILES"] = "/dev/null"
+        self.env["NIX_STATE_DIR"] = str(self.root / "nix-state")
+        self.env["NIX_LOG_DIR"] = str(self.root / "nix-log")
+        self.env["NIX_CONF_DIR"] = str(self.root / "nix-conf")
+        (self.root / "nix-conf").mkdir(exist_ok=True)
 
     def install_hook(self, event, body):
         self.mock_command("fixture-hook", body)
@@ -71,6 +76,148 @@ class ConsumerCLI(unittest.TestCase):
         self.env["HOME"] = str(home)
         self.env["ZDOTDIR"] = str(home)
         return home
+
+    def dispatcher_fixture(self):
+        self.isolate_home()
+        framework = (self.root / "framework").resolve()
+        scripts = framework / "bin"
+        shutil.copytree(ROOT / "bin", scripts)
+        # Nix source trees are read-only. Change only the copied fixture, never
+        # the shared runtime/vendor directories linked below.
+        for path in [scripts, *scripts.rglob("*")]:
+            path.chmod((path.stat().st_mode & 0o777) | 0o200)
+        for name in ("runtime", "vendor"):
+            (framework / name).symlink_to(ROOT / name, target_is_directory=True)
+        executable = framework / "bin/hey"
+
+        def run(*args):
+            return subprocess.run([str(executable), *args], cwd=self.consumer,
+                                  env=self.env, text=True, capture_output=True, timeout=10)
+
+        return framework, run
+
+    def test_lazy_dispatch_broken_commands_do_not_block_help_or_unrelated_commands(self):
+        framework, run = self.dispatcher_fixture()
+        optional = framework / "bin/hey.d/utm.janet"
+        header = optional.read_text().split("(use hey)", 1)[0]
+        marker = self.root / "optional-loaded"
+        cases = {
+            "parse": "(def broken [\n",
+            "dependency": "(import ./missing-optional-dependency)\n",
+            "initialization": f'(spit {json.dumps(str(marker))} "loaded")\n'
+                              '(error "synthetic optional initialization failure")\n',
+        }
+        for kind, body in cases.items():
+            optional.write_text(header + body)
+            for args in (("--help",), ("help", "utm"), ("h", "utm"), ("utm", "--help"),
+                         ("--help", "utm"), ("which", "utm"), ("-h", "s"),
+                         ("path", "home")):
+                with self.subTest(kind=kind, args=args):
+                    result = run(*args)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertFalse(marker.exists(), result.stdout + result.stderr)
+                    self.assertNotIn("stack trace", result.stderr)
+            result = run("utm", "list")
+            self.assertNotEqual(result.returncode, 0)
+            if kind == "initialization":
+                self.assertTrue(marker.exists())
+                marker.unlink()
+            result = run("definitely-nope")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Unknown command: "definitely-nope"', result.stderr)
+            self.assertFalse(marker.exists())
+        # Direct Janet entry and a different resource/consumer root must still
+        # load command implementations next to this dispatcher, as imports did.
+        for args in (("which", "utm"), ("path", "home")):
+            result = subprocess.run(
+                ["janet", "-m", str(ROOT / "runtime"), str(framework / "bin/hey.janet"), *args],
+                cwd=self.consumer, env={**self.env, "HEY_FRAMEWORK_ROOT": str(self.consumer),
+                                        "JANET_PATH": self.env.get("JANET_PATH", "") + ":" + str(ROOT / "runtime")},
+                text=True, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(marker.exists())
+            if args[0] == "which":
+                self.assertEqual(result.stdout.strip(), str(optional))
+
+    def test_lazy_dispatch_aliases_forward_arguments_status_and_complete_registry(self):
+        framework, run = self.dispatcher_fixture()
+        marker = self.root / "loaded-command"
+        commands = sorted(path.stem for path in (framework / "bin/hey.d").glob("*.janet"))
+        for name in commands:
+            (framework / f"bin/hey.d/{name}.janet").write_text(
+                "#!/usr/bin/env janet\n# Synthetic command header.\n\n"
+                "(use hey)\n(use hey/cmd)\n(import spork/json)\n"
+                f'(with [log (file/open {json.dumps(str(marker))} :a)] (file/write log "{name}\\n"))\n'
+                f"(defcmd {name} [& args all]\n"
+                '  (print (json/encode {:args all :commands (command-names)}))\n'
+                "  (exit 23))\n")
+        aliases = {"b": "build", "ctx": "context", "pr": "profile", "re": "reload",
+                   "sw": "swap", "s": "sync", "get": "vars", "set": "vars"}
+        arguments = ["two words", "$(printf EXPANDED)", "quote'\"", "a;b", "--unknown", "-12", "--help", "-!"]
+        for spelling, name in [(name, name) for name in commands] + list(aliases.items()):
+            with self.subTest(command=spelling):
+                result = run(spelling, "--", *arguments)
+                self.assertEqual(result.returncode, 23, result.stderr)
+                payload = json.loads(result.stdout)
+                prefix = [spelling, spelling] if spelling in {"get", "set"} else [spelling]
+                self.assertEqual(payload["args"], [*prefix, "--", *arguments])
+                self.assertEqual(payload["commands"], commands)
+                self.assertEqual(marker.read_text(), name + "\n")
+                marker.unlink()
+                result = run("which", spelling, "two words")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                operands = (spelling + " " if spelling in {"get", "set"} else "") + "two words"
+                self.assertEqual(result.stdout.strip(),
+                                 str(framework / f"bin/hey.d/{name}.janet") + " " + operands)
+                self.assertFalse(marker.exists())
+
+    def test_lazy_dispatch_missing_module_does_not_fall_back(self):
+        framework, run = self.dispatcher_fixture()
+        (framework / "bin/hey.d/utm.janet").unlink()
+        marker = self.root / "fallback-ran"
+        self.mock_command("utm", f"from pathlib import Path\nPath({str(marker)!r}).touch()\n")
+        for args in (("--help",), ("path", "home"), ("which", "utm")):
+            result = run(*args)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        for args in (("utm", "list"), ("help", "utm")):
+            result = run(*args)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(marker.exists())
+
+    def test_lazy_command_loader_caches_import_and_rejects_missing_registration(self):
+        self.isolate_home()
+        self.env["JANET_PATH"] = self.env.get("JANET_PATH", "") + ":" + str(ROOT / "runtime")
+        module = self.root / "fixture.janet"
+        marker = self.root / "imports"
+        marker.write_text("")
+        marker_literal = json.dumps(str(marker))
+        module.write_text("(use hey/cmd)\n"
+                          f'(spit {marker_literal} (string (slurp {marker_literal}) "loaded\\n"))\n'
+                          "(defcmd fixture [& args] args)\n")
+        program = f'''(import hey/cmd)
+(cmd/register-lazy 'fixture {json.dumps(str(module))})
+(def entry (cmd/cmd 'fixture))
+(assert (= "fixture" (string/join (cmd/command-names) ",")))
+(assert (= "" (string (slurp {marker_literal}))))
+(assert (= "first|two words" (string/join ((entry :cmd) "first" "two words") "|")))
+(assert (= "second" (string/join ((entry :cmd) "second") "|")))
+(cmd/register-lazy 'fixture {json.dumps(str(module))})
+(assert (= "third" (string/join (((cmd/cmd 'fixture) :cmd) "third") "|")))
+(assert (= "loaded\\n" (string (slurp {marker_literal}))))
+'''
+        result = subprocess.run(["janet", "-e", program], cwd=self.consumer, env=self.env,
+                                text=True, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        empty = self.root / "no-command.janet"
+        empty.write_text("(def unrelated true)\n")
+        program = f'''(import hey/cmd)
+(cmd/register-lazy 'absent {json.dumps(str(empty))})
+(((cmd/cmd 'absent) :cmd) "argument")
+'''
+        result = subprocess.run(["janet", "-e", program], cwd=self.consumer, env=self.env,
+                                text=True, capture_output=True, timeout=10)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Command module did not register absent", result.stderr)
 
     def test_external_dispatch_preserves_status_arguments_and_dry_runs(self):
         self.isolate_home()
@@ -505,6 +652,24 @@ with Path({str(calls)!r}).open("a") as output: output.write(json.dumps(sys.argv[
         result = self.run_hey("eks", "vpn", "restart", "vpn")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual([json.loads(line)[1] for line in calls.read_text().splitlines()], ["reset-failed", "restart"])
+        # Generated AWS/SAML-only metadata must keep both login providers usable
+        # without invoking the optional Kubernetes collection.
+        for command in ("kubectl", "k9s", "kubectx", "stern"):
+            self.mock_command(command, "raise AssertionError('unexpected Kubernetes invocation')\n")
+        self.mock_command("aws", f'''import json, sys
+from pathlib import Path
+with Path({str(log)!r}).open("a") as output: output.write(json.dumps(sys.argv[1:]) + "\\n")
+''')
+        for platform, metadata in fixtures["authOnlyMetadata"].items():
+            with self.subTest(auth_only=platform):
+                self.assertFalse(metadata["eksEnabled"])
+                self.assertTrue(metadata["samlEnabled"])
+                self.configure_eks(**metadata)
+                for account, expected in (("work", ["sso", "login", "--profile", "work"]),
+                                          ("interactive", ["login", "-a", "interactive"])):
+                    result = self.run_hey("eks", "login", account)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(json.loads(log.read_text().splitlines()[-1]), expected)
 
     def mock_eks_probes(self):
         log = self.root / "probe-calls"
@@ -775,7 +940,7 @@ sys.stdout.write('x' * (9 * 1024 * 1024))
         self.isolate_home()
         for command, output in (("hostname", "laptop"), ("uname", "Darwin"),
                                 ("nix", "nix fixture"), ("kubectl", "fixture-context"),
-                                ("darwin-rebuild", "")):
+                                ("darwin-rebuild", ""), ("sudo", ""), ("id", "501")):
             self.mock_command(command, f"print({output!r})\n")
         directory = self.root / "mock-bin"
         for name in ("janet", "dirname"):
@@ -785,6 +950,24 @@ sys.stdout.write('x' * (9 * 1024 * 1024))
         metadata.mkdir(parents=True)
         (metadata / "path").write_text(str(directory))
         self.env.update(PATH=str(directory), HEY_NIX_USE_NOM="0")
+
+    def mock_nix_doctor(self, client="2.34.8", daemon="2.34.8", *,
+                        client_output=None, client_status=0, daemon_output=None,
+                        daemon_status=0, daemon_error=""):
+        return self.mock_command("nix", f'''import sys
+args = sys.argv[1:]
+if args == ["--version"]:
+    print({client_output if client_output is not None else 'nix (Nix) '+client!r})
+    sys.exit({client_status})
+if args == ["config", "show", "sandbox"]:
+    print("true")
+elif args == ["store", "info", "--store", "daemon", "--json"]:
+    print({daemon_output if daemon_output is not None else json.dumps({'url': 'daemon', 'version': daemon})!r})
+    print({daemon_error!r}, file=sys.stderr)
+    sys.exit({daemon_status})
+else:
+    raise AssertionError("unexpected diagnostic command")
+''')
 
     def test_diagnostics_never_print_nix_config(self):
         self.diagnostic_fixture()
@@ -821,6 +1004,53 @@ sys.stdout.write('x' * (9 * 1024 * 1024))
             self.assertNotIn("SYNTHETIC_PRIVATE_VALUE", result.stdout + result.stderr)
             self.assertNotIn("SYNTHETIC_EXCLUDED", result.stdout + result.stderr)
             secret.unlink()
+
+    def test_secret_doctor_strict_exit_codes_and_credential_formats(self):
+        self.diagnostic_fixture()
+        (self.root / "mock-bin/rg").symlink_to(shutil.which("rg"))
+        self.env["HEY_DOCTOR_SECRET_PATHS"] = str(self.consumer)
+        clean = self.run_hey("doctor", "secrets", "--strict")
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+        for value in (
+            "SOPS_AGE_KEY=SYNTHETIC_PRIVATE_VALUE",
+            "$6$synthetic-salt$SYNTHETIC_PRIVATE_VALUE",
+            "$y$synthetic$SYNTHETIC_PRIVATE_VALUE",
+            "$2b$12$SYNTHETIC_PRIVATE_VALUE",
+            "$argon2id$v=19$SYNTHETIC_PRIVATE_VALUE",
+            "-----BEGIN " + "OPENSSH PRIVATE KEY-----\nSYNTHETIC_PRIVATE_VALUE",
+            "-----BEGIN " + "ENCRYPTED PRIVATE KEY-----\nSYNTHETIC_PRIVATE_VALUE",
+            "-----BEGIN " + "PGP PRIVATE KEY BLOCK-----\nSYNTHETIC_PRIVATE_VALUE",
+            "AGE-SECRET-KEY-1SYNTHETIC_PRIVATE_VALUE",
+        ):
+            with self.subTest(value=value.split("SYNTHETIC")[0]):
+                (self.consumer / "fixture").write_text(value + "\n")
+                result = self.run_hey("doctor", "secrets", "--strict")
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("inline secret markers found", result.stderr)
+                self.assertNotIn("SYNTHETIC_PRIVATE_VALUE", result.stdout + result.stderr)
+                warning = self.run_hey("doctor", "secrets")
+                self.assertEqual(warning.returncode, 0, warning.stderr)
+
+    def test_secret_doctor_scan_failures_are_incomplete_and_redacted(self):
+        self.diagnostic_fixture()
+        self.env["HEY_DOCTOR_SECRET_PATHS"] = str(self.consumer)
+        for status in (0, 1, 2, 124, 125):
+            self.mock_command("rg", "import sys\nprint('SYNTHETIC_PRIVATE_VALUE')\n"
+                              "print('SYNTHETIC_PRIVATE_VALUE', file=sys.stderr)\n"
+                              f"sys.exit({status})\n")
+            for suffix in ((), ("--strict",)):
+                result = self.run_hey("doctor", "secrets", *suffix)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertNotIn("SYNTHETIC_PRIVATE_VALUE", result.stdout + result.stderr)
+                self.assertNotIn("no inline secret markers found", result.stdout)
+        # Missing roots cannot turn a failed/incomplete scan into a clean scan.
+        self.env["HEY_DOCTOR_SECRET_PATHS"] = ""
+        self.assertEqual(self.run_hey("doctor", "secrets", "--strict").returncode, 2)
+        self.assertNotEqual(self.run_hey("doctor", "env", "--strict").returncode, 0)
+        self.assertEqual(self.run_hey("-!", "doctor", "secrets", "--strict").returncode, 0)
+        daily = self.run_hey("-!", "doctor", "--strict")
+        self.assertEqual(daily.returncode, 0, daily.stderr)
+        self.assertIn("doctor secrets --quiet --strict", daily.stdout + daily.stderr)
 
     def test_agent_doctor_parses_configuration_instead_of_matching_comments(self):
         self.diagnostic_fixture()
@@ -868,6 +1098,7 @@ sys.stdout.write('x' * (9 * 1024 * 1024))
         # A failed command may put arbitrary data on either stream. Do not rely
         # on a particular ripgrep version/error mode to keep stderr empty.
         for status, err, out in [(2, "", marker), (2, marker, marker), (0, "", marker),
+                                 (1, marker, ""),
                                  (0, "", '{"type":"unknown"}'), (0, "", '{"type":"summary"}')]:
             self.mock_command("rg", f'''import sys
 assert "--no-config" in sys.argv and "--json" in sys.argv
@@ -919,7 +1150,152 @@ sys.exit({status})
                         self.assertNotIn(marker, result.stdout + result.stderr)
                         self.assertNotIn("github.com=", result.stdout + result.stderr)
                         if verbosity:
-                            self.assertIn("<set; contents hidden>", result.stderr)
+                            self.assertIn("<set; contents hidden>", result.stdout + result.stderr)
+
+    def sync_activation_fixture(self, platform="Darwin", build_status=0, sudo_status=0, output=None):
+        self.isolate_home()
+        calls = self.root / "sync-calls.jsonl"
+        candidate = "/nix/store/" + "0" * 32 + "-synthetic-system"
+        checkpoint = "/nix/store/" + "1" * 32 + "-synthetic-checkpoint"
+        helper = "/nix/store/" + "2" * 32 + "-synthetic-activator/bin/nixi-system-activate"
+        self.env.update(HEY_SYSTEM_ACTIVATOR=helper,
+                        NIX_CONFIG="access-tokens = SYNTHETIC_SYNC_TOKEN\n",
+                        SSH_AUTH_SOCK="/synthetic/agent.sock", NIX_PATH="synthetic-channel")
+        self.mock_command("uname", f"print({platform!r})\n")
+        self.mock_command("id", "print('501')\n")
+        self.mock_command("readlink", f"print({checkpoint!r})\n")
+        self.mock_command("nix", f'''import json, os, sys
+from pathlib import Path
+assert "NIX_PATH" not in os.environ
+assert os.environ["SSH_AUTH_SOCK"] == "/synthetic/agent.sock"
+with Path({str(calls)!r}).open("a") as stream:
+    stream.write(json.dumps({{"command": "nix", "args": sys.argv[1:]}}) + "\\n")
+if {build_status}: sys.exit({build_status})
+if "--out-link" in sys.argv:
+    Path(sys.argv[sys.argv.index("--out-link")+1]).symlink_to({candidate!r})
+print({(json.dumps([{"outputs": {"out": candidate}}]) if output is None else output)!r})
+''')
+        self.mock_command("sudo", f'''import json, os, sys
+from pathlib import Path
+assert Path({str(self.root / 'runtime/hey/profile-rm.lock')!r}).is_dir()
+assert all(key not in os.environ for key in ("NIX_CONFIG", "NIX_PATH", "NIX_REMOTE", "SSH_AUTH_SOCK", "DOTFILES", "DOTFILES_HOME"))
+with Path({str(calls)!r}).open("a") as stream:
+    stream.write(json.dumps({{"command": "sudo", "args": sys.argv[1:]}}) + "\\n")
+sys.exit({sudo_status})
+''')
+        for name in ("darwin-rebuild", "nixos-rebuild"):
+            self.mock_command(name, "raise AssertionError('must never evaluate a flake with a rebuild frontend')\n")
+        return calls, candidate, checkpoint, helper
+
+    def test_sync_builds_as_caller_then_activates_fixed_output_without_caller_environment(self):
+        for platform, actions in (("Darwin", ("switch", "activate")),
+                                  ("Linux", ("switch", "boot", "test", "dry-activate"))):
+            for action in actions:
+                with self.subTest(platform=platform, action=action):
+                    calls, candidate, checkpoint, helper = self.sync_activation_fixture(platform)
+                    calls.unlink(missing_ok=True)
+                    result = self.run_hey("sync", action, "--flake", str(self.consumer) + "#laptop",
+                                          "--max-jobs", "2", "--cores", "2")
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    events = [json.loads(line) for line in calls.read_text().splitlines()]
+                    self.assertEqual([event["command"] for event in events], ["nix", "sudo"])
+                    argv = events[0]["args"]
+                    self.assertEqual(argv[0], "build")
+                    for flag in ("--json", "--no-write-lock-file", "--no-update-lock-file"):
+                        self.assertIn(flag, argv)
+                    self.assertIn("--max-jobs", argv)
+                    rooted = Path(argv[argv.index("--out-link") + 1])
+                    self.assertFalse(rooted.parent.exists(), "temporary GC roots must be cleaned")
+                    self.assertEqual(events[1]["args"], ["--", helper, "--action", action,
+                        "--candidate", candidate, "--expected-profile", checkpoint,
+                        "--expected-running", checkpoint])
+                    self.assertNotIn("SYNTHETIC_SYNC_TOKEN", result.stdout + result.stderr)
+                    self.assertFalse((self.root / "runtime/hey/profile-rm.lock").exists())
+
+    def test_sync_failed_build_or_activation_preserves_status_and_releases_roots_and_lock(self):
+        for build_status, sudo_status in ((19, 0), (0, 23)):
+            with self.subTest(build_status=build_status, sudo_status=sudo_status):
+                calls, *_ = self.sync_activation_fixture(build_status=build_status, sudo_status=sudo_status)
+                calls.unlink(missing_ok=True)
+                result = self.run_hey("sync", "--flake", str(self.consumer) + "#laptop")
+                self.assertEqual(result.returncode, build_status or sudo_status, result.stderr)
+                events = [json.loads(line) for line in calls.read_text().splitlines()]
+                self.assertEqual([event["command"] for event in events], ["nix"] if build_status else ["nix", "sudo"])
+                rooted = Path(events[0]["args"][events[0]["args"].index("--out-link") + 1])
+                self.assertFalse(rooted.parent.exists())
+                self.assertFalse((self.root / "runtime/hey/profile-rm.lock").exists())
+
+    def test_sync_rejects_ambiguous_build_outputs_before_privilege(self):
+        for output in ("[]", "not-json-SYNTHETIC_PRIVATE_OUTPUT", '[{}, {}]',
+                       '[{"outputs":"SYNTHETIC_PRIVATE_OUTPUT"}]', '["SYNTHETIC_PRIVATE_OUTPUT"]',
+                       '{"outputs":{"out":"/tmp/mutable-result"}}',
+                       '[{"outputs":{"out":"/tmp/mutable-result"}}]',
+                       '[{"outputs":{"out":"/nix/store/' + '0' * 32 + '-system/../escape"}}]'):
+            with self.subTest(output=output):
+                calls, *_ = self.sync_activation_fixture(output=output)
+                calls.unlink(missing_ok=True)
+                result = self.run_hey("sync", "--flake", str(self.consumer) + "#laptop")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn('"command": "sudo"', calls.read_text())
+                self.assertNotIn("SYNTHETIC_PRIVATE_OUTPUT", result.stdout + result.stderr)
+
+    def test_sync_dry_run_explain_and_unsupported_arguments_never_build_or_activate(self):
+        calls, *_ = self.sync_activation_fixture()
+        for prefix, args in ((["-!"], []), ([], ["--explain"]),
+                             ([], ["switch", "--target-host", "remote"]),
+                             ([], ["switch", "--profile-name", "other"]),
+                             ([], ["switch", "--out-link", "/tmp/unreviewed"]),
+                             ([], ["unknown-action"])):
+            with self.subTest(prefix=prefix, args=args):
+                result = self.run_hey(*prefix, "sync", *args, "--flake", str(self.consumer) + "#laptop")
+                self.assertEqual(result.returncode == 0, bool(prefix or "--explain" in args), result.stderr)
+                self.assertFalse(calls.exists())
+                self.assertFalse((self.root / "runtime/hey/profile-rm.lock").exists())
+
+    def test_sync_refuses_root_evaluation_and_build(self):
+        calls, *_ = self.sync_activation_fixture()
+        self.mock_command("id", "print('0')\n")
+        for action in ("switch", "build", "check"):
+            result = self.run_hey("sync", action, "--flake", str(self.consumer) + "#laptop")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("normal user", result.stderr)
+            self.assertFalse(calls.exists())
+
+    def test_sync_source_fallback_builds_activator_as_caller_and_rejects_mutable_helper(self):
+        calls, candidate, *_ = self.sync_activation_fixture()
+        self.env.pop("HEY_SYSTEM_ACTIVATOR")
+        result = self.run_hey("sync", "--flake", str(self.consumer) + "#laptop")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        events = [json.loads(line) for line in calls.read_text().splitlines()]
+        self.assertEqual([event["command"] for event in events], ["nix", "nix", "sudo"])
+        self.assertTrue(events[1]["args"][-1].endswith("#system-activation"))
+        self.assertEqual(events[2]["args"][1], candidate + "/bin/nixi-system-activate")
+        for event in events[:2]:
+            self.assertFalse(Path(event["args"][event["args"].index("--out-link") + 1]).parent.exists())
+        calls.unlink()
+        self.env["HEY_SYSTEM_ACTIVATOR"] = "/tmp/mutable-helper"
+        result = self.run_hey("sync", "--flake", str(self.consumer) + "#laptop")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn('"command": "sudo"', calls.read_text())
+
+    def test_sync_check_and_vm_build_remain_unprivileged_and_explain_matches_action(self):
+        calls, *_ = self.sync_activation_fixture("Linux")
+        for action, suffix in (("check", ""), ("build-vm", ".vm"), ("build-vm-with-bootloader", ".vmWithBootLoader")):
+            with self.subTest(action=action):
+                calls.unlink(missing_ok=True)
+                (self.consumer / "result-vm").unlink(missing_ok=True)
+                result = self.run_hey("sync", action, "--flake", str(self.consumer) + "#laptop")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                events = [json.loads(line) for line in calls.read_text().splitlines()]
+                self.assertEqual(len(events), 1)
+                self.assertEqual(events[0]["command"], "nix")
+                if suffix:
+                    self.assertTrue(events[0]["args"][-1].endswith(suffix))
+                else:
+                    self.assertEqual(events[0]["args"][:2], ["flake", "check"])
+                result = self.run_hey("sync", action, "--explain")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn("activation command:", result.stdout)
 
     def test_sync_plan_never_builds_activates_updates_locks_or_uses_nom(self):
         self.isolate_home()
@@ -964,6 +1340,10 @@ print("17 derivations will be built; 23 paths will be fetched (42 MiB download)"
     def test_sync_plan_with_real_isolated_nix_refuses_evaluation_time_builds(self):
         self.isolate_home()
         self.isolate_nix()
+        # Select this test runner's tools, not the installed host's managed PATH.
+        metadata = self.root / "data/hey"
+        metadata.mkdir(parents=True)
+        (metadata / "path").write_text(self.env["PATH"])
         self.mock_command("uname", "print('Darwin')\n")
         marker = self.root / "builder-ran"
         lock = self.consumer / "flake.lock"
@@ -2094,7 +2474,7 @@ print("424242 {parent} S 00:10 ssh example.invalid")
 with Path({str(calls)!r}).open("a") as log: log.write("ps\\n")
 print("321 1 S 00:00 /nix/store/fixture-nix-2.0/bin/nix-daemon")
 ''')
-        self.mock_command("nix", "import sys\nprint('true' if sys.argv[1:] == ['config', 'show', 'sandbox'] else 'fixture daemon reachable')\n")
+        self.mock_nix_doctor()
         result = self.run_hey("doctor", "nix", "--verbose")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("modules/new-module.nix", result.stderr)
@@ -2111,7 +2491,7 @@ print("321 1 S 00:00 /nix/store/fixture-nix-2.0/bin/nix-daemon")
     def test_non_git_consumer_explicitly_skips_untracked_check(self):
         self.isolate_home()
         self.env.update(GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_SYSTEM="/dev/null")
-        self.mock_command("nix", "import sys\nprint('true' if sys.argv[1:] == ['config', 'show', 'sandbox'] else 'fixture daemon reachable')\n")
+        self.mock_nix_doctor()
         self.mock_command("ps", "print('321 1 S 00:00 /nix/store/fixture-nix-2.0/bin/nix-daemon')\n")
         result = self.run_hey("doctor", "nix", "--verbose")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -2133,22 +2513,84 @@ print("321 1 S 00:00 /nix/store/fixture-nix-2.0/bin/nix-daemon")
                 self.mock_command("nix", f'''import sys
 from pathlib import Path
 args = sys.argv[1:]
+if args == ["--version"]:
+    print("nix (Nix) 2.34.8")
+    sys.exit(0)
 if args == ["config", "show", "sandbox"]:
     with Path({str(calls)!r}).open("a") as log: log.write("scalar\\n")
     print({value!r})
     print("SYNTHETIC_PRIVATE_VALUE", file=sys.stderr)
     sys.exit({status})
-assert args == ["store", "info", "--store", "daemon"], args
+assert args == ["store", "info", "--store", "daemon", "--json"], args
+print('{{"url":"daemon","version":"2.34.8"}}')
 ''')
                 result = self.run_hey("doctor", "nix", "--verbose")
                 self.assertEqual(result.returncode == 0, status == 0 and value in ("true", "false", "relaxed"), result.stderr)
                 self.assertIn(expected, result.stdout + result.stderr)
                 self.assertNotIn("SYNTHETIC_PRIVATE_VALUE", result.stdout + result.stderr)
         self.assertEqual(calls.read_text().splitlines(), ["scalar"] * 5)
+
         result = self.run_hey("-!", "doctor", "nix")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("DRYRUN: nix config show sandbox", result.stdout)
         self.assertEqual(calls.read_text().splitlines(), ["scalar"] * 5)
+
+    def test_nix_doctor_distinguishes_invocation_hey_and_daemon_versions(self):
+        self.diagnostic_fixture()
+        self.mock_command("ps", "print('321 1 S 00:00 /nix/store/fixture-nix-2.0/bin/nix-daemon')\n")
+        self.mock_command("git", "pass\n")
+        directory = self.mock_nix_doctor(client="2.34.8+1", daemon="2.34.8+1")
+        shell = self.root/'shell-bin'
+        shell.mkdir()
+        executable = self.root/'versioned nix with spaces'
+        executable.write_text(f'#!{sys.executable}\nimport sys\nassert sys.argv[1:] == ["--version"]\nprint("nix (Nix) 2.19.2")\n')
+        executable.chmod(0o755)
+        (shell/'nix').symlink_to(executable)
+        self.env['PATH'] = str(shell)+os.pathsep+str(directory)
+        result = self.run_hey("doctor", "nix", "--verbose")
+        output = result.stdout+result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn('Invocation PATH Nix client version: 2.19.2', output)
+        self.assertIn('Hey Nix client version: 2.34.8+1', output)
+        self.assertIn('Connected Nix daemon version: 2.34.8+1', output)
+        self.assertIn(json.dumps(str(executable.resolve())), output)
+        self.assertIn('Invocation PATH and Hey select different Nix executables', output)
+        self.assertIn('client 2.19.2 differs from connected daemon 2.34.8+1', output)
+        self.assertIn('process executable version label: 2.0', output)
+        self.assertNotIn('daemon is outdated', output)
+        quiet = self.run_hey("doctor", "nix")
+        self.assertIn('client 2.19.2 differs from connected daemon 2.34.8+1', quiet.stderr)
+        # Daily doctor starts a child with Hey's augmented PATH. Preserve the
+        # original caller selection even when unrelated fixture checks fail.
+        daily = self.run_hey("doctor", "--verbose")
+        self.assertIn('Invocation PATH Nix client version: 2.19.2', daily.stdout+daily.stderr)
+
+    def test_nix_doctor_incomplete_identity_probes_are_redacted(self):
+        self.diagnostic_fixture()
+        self.mock_command("ps", "print('321 1 S 00:00 /nix/store/fixture-nix-2.0/bin/nix-daemon')\n")
+        self.mock_command("git", "pass\n")
+        for options, expected in (
+                ({'client_output': 'SYNTHETIC_PRIVATE_VALUE'}, 'client version could not be validated'),
+                ({'client_output': 'SYNTHETIC_PRIVATE_VALUE', 'client_status': 42}, 'client version probe failed'),
+                ({'daemon_status': 1, 'daemon_error': 'Permission denied SYNTHETIC_PRIVATE_VALUE'}, 'daemon probe access denied'),
+                ({'daemon_status': 1, 'daemon_error': 'Connection refused SYNTHETIC_PRIVATE_VALUE'}, 'daemon connection unavailable'),
+                ({'daemon_status': 124, 'daemon_error': 'SYNTHETIC_PRIVATE_VALUE'}, 'daemon probe failed'),
+                ({'daemon_output': 'SYNTHETIC_PRIVATE_VALUE'}, 'daemon response could not be validated'),
+                ({'daemon_output': '{"url":"daemon"}'}, 'daemon version was not reported'),
+                ({'daemon_output': '{"url":"daemon","version":"SYNTHETIC_PRIVATE_VALUE"}'}, 'daemon response could not be validated')):
+            with self.subTest(expected=expected):
+                self.mock_nix_doctor(**options)
+                result = self.run_hey("doctor", "nix", "--verbose")
+                output = result.stdout+result.stderr
+                self.assertNotEqual(result.returncode, 0, output)
+                self.assertIn(expected, output)
+                self.assertNotIn('SYNTHETIC_PRIVATE_VALUE', output)
+                self.assertNotIn('nix doctor passed', output)
+        (self.root/'mock-bin/nix').unlink()
+        missing = self.run_hey("doctor", "nix")
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn('client unavailable: executable not found', missing.stderr)
+        self.assertNotIn('nix doctor passed', missing.stdout)
 
     def test_retired_swap_preserves_edits_and_legacy_inventory(self):
         editable = self.root / "editable"
@@ -2510,7 +2952,7 @@ print("locked-switch")
         self.assertFalse(lock.exists())
 
     def test_sync_and_system_rollback_release_shared_lock_on_failure(self):
-        self.isolate_home()
+        self.sync_activation_fixture()
         lock = self.root / "runtime/hey/profile-rm.lock"
         self.mock_command("sudo", f'''from pathlib import Path
 assert Path({str(lock)!r}).is_dir(), "mutation must hold the shared lock"

@@ -7,7 +7,7 @@
 #   doctor env
 #   doctor fix zsh-cache|tmux-env|stale-store-paths
 #   doctor nix
-#   doctor secrets
+#   doctor secrets [--strict]
 #   doctor shell [--profile]
 #   doctor sync
 #   doctor zed
@@ -30,6 +30,9 @@
 #     Print successful checks and detail lines too.
 #   --profile
 #     With `doctor shell`, measure interactive zsh startup time.
+#   --strict
+#     With `doctor secrets` or the daily doctor, fail on marker findings.
+#     Secret scan exits: 0 clean, 1 strict findings, 2 incomplete/failed scan.
 
 (use hey)
 (use hey/cmd)
@@ -37,9 +40,10 @@
 (import hey/system)
 
 (def- usage
-  "Usage: hey doctor [--quiet|--verbose] [agents|env|nix|secrets|shell|sync|zed] | hey doctor fix zsh-cache|tmux-env|stale-store-paths")
+  "Usage: hey doctor [--quiet|--verbose] [agents|env|nix|secrets|shell|sync|zed] | hey doctor [secrets] --strict | hey doctor fix zsh-cache|tmux-env|stale-store-paths")
 
 (defdyn *doctor-verbose*)
+(defdyn *doctor-strict*)
 
 (defn- verbose? []
   (dyn :doctor-verbose false))
@@ -143,12 +147,17 @@
   (if (verbose?) @["--verbose"] @["--quiet"]))
 
 (defn- run-doctor-command [subcmd]
-  (if (dryrun?)
-    (do
-      (echof "DRYRUN: hey doctor %s %s" subcmd (string/join (doctor-mode-args) " "))
-      true)
-    (let [status (os/execute @[(path :bin "hey") "doctor" subcmd ;(doctor-mode-args)] :p)]
-      (= 0 status))))
+  (let [mode (doctor-mode-args)
+        _ (when (and (= subcmd "secrets") (dyn :doctor-strict false))
+            (array/push mode "--strict"))]
+    (if (dryrun?)
+      (do
+        (echof "DRYRUN: hey doctor %s %s" subcmd (string/join mode " "))
+        true)
+      (let [args @[(path :bin "hey") "doctor" subcmd ;mode]
+            status (with-envvars ["HEY_DOCTOR_CALLER_PATH" (or (os/getenv "HEY_DOCTOR_CALLER_PATH") invocation-path)]
+                     (os/execute args :p))]
+        (= 0 status)))))
 
 (defn- run-command [args]
   (if (dryrun?)
@@ -500,16 +509,82 @@
   (unique-lines
     (keep nix-daemon-version lines)))
 
-(defn- check-daemon []
-  (let [result (run @["nix" "store" "info" "--store" "daemon"])]
-    (if (= 0 (result :status))
-      (do
-        (success "Nix daemon store is reachable")
-        (when (verbose?)
-          (echo (result :out)))
-        true)
-      (failure "Nix daemon store is reachable"
-               (if (empty? (result :err)) (result :out) (result :err))))))
+(defn- nix-version? [value]
+  (and (string? value) (<= (length value) 128)
+       (peg/match '(* :d+ "." :d+ (any (+ (range "09" "az" "AZ") "." "+" "_" "-")) -1) value)))
+
+(defn- nix-identity-probe [args]
+  # Failed/partial probes may include NIX_CONFIG values or authenticated URLs.
+  # Return only validated fields to callers, never raw streams or exceptions.
+  (try (run args)
+       ([err fib] {:status 126 :out "" :err ""})))
+
+(defn- nix-client [label executable &opt cached]
+  (if (nil? executable)
+    (do (failure (string label " unavailable: executable not found")) nil)
+    (let [resolved (ignore-errors (os/realpath executable))]
+      (unless resolved
+        (failure (string label " unavailable: executable could not be resolved"))
+        (break nil))
+      (detail "%s selected: %s" label (json/encode executable))
+      (detail "%s resolved: %s" label (json/encode resolved))
+      (let [same? (and cached (= resolved (cached :path)))
+            result (if same? nil (nix-identity-probe @[resolved "--version"]))
+            prefix "nix (Nix) "
+            out (if result (string/trim (result :out)) "")
+            version (if same? (cached :version)
+                      (if (string/has-prefix? prefix out) (string/slice out (length prefix))))]
+        (cond
+          (and result (not= 0 (result :status)))
+            (do (failure (string label " version probe failed; output withheld")) nil)
+          (not (nix-version? version))
+            (do (failure (string label " version could not be validated; output withheld")) nil)
+          (do
+            (detail "%s version: %s" label version)
+            {:path resolved :version version}))))))
+
+(defn- check-daemon [client]
+  (unless client
+    (failure "Connected Nix daemon version unknown: Hey client unavailable")
+    (break nil))
+  (let [result (nix-identity-probe @[(client :path) "store" "info" "--store" "daemon" "--json"])]
+    (if (not= 0 (result :status))
+      (let [err (string/ascii-lower (result :err))
+            reason (cond
+                     (or (contains? err "permission denied") (contains? err "operation not permitted")
+                         (contains? err "access denied") (contains? err "not allowed")) "probe access denied"
+                     (or (contains? err "connection refused") (contains? err "no such file or directory")) "connection unavailable"
+                     "probe failed")]
+        (failure (string "Connected Nix daemon " reason "; version unknown; output withheld"))
+        nil)
+      (try
+        (let [info (json/decode (result :out) false true)]
+          (unless (and (dictionary? info) (= "daemon" (get info "url")))
+            (error "Invalid daemon info"))
+          (success "Nix daemon store is reachable")
+          (if (nil? (get info "version"))
+            (do (failure "Connected Nix daemon version was not reported") nil)
+            (do
+              (unless (nix-version? (info "version")) (error "Invalid daemon version"))
+              (detail "Connected Nix daemon version: %s" (info "version"))
+              (info "version"))))
+        ([err fib]
+         (failure "Connected Nix daemon response could not be validated; output withheld")
+         nil)))))
+
+(defn- check-nix-identities []
+  (let [caller-path (or (os/getenv "HEY_DOCTOR_CALLER_PATH") invocation-path)
+        shell (nix-client "Invocation PATH Nix client" (path/find "nix" (string/split ":" caller-path)))
+        client (nix-client "Hey Nix client" (path/find "nix") shell)
+        daemon (check-daemon client)]
+    (when (and shell client (not= (shell :path) (client :path)))
+      (warning "Invocation PATH and Hey select different Nix executables"
+               (string "shell: " (json/encode (shell :path)) "\nHey: " (json/encode (client :path)))))
+    (each [label identity] [["Invocation PATH" shell] ["Hey" client]]
+      (when (and identity daemon (not= (identity :version) daemon))
+        (warning (string label " Nix client " (identity :version) " differs from connected daemon " daemon)
+                 "Review client/profile selection; a version mismatch alone does not establish vulnerability or daemon age.")))
+    (and shell client daemon true)))
 
 (defn- check-processes []
   (var ok true)
@@ -553,12 +628,12 @@
 
     (if (<= (length versions) 1)
       (do
-        (success "single nix-daemon version is active")
+        (success "single nix-daemon executable version label observed")
         (when (not (empty? versions))
-          (detail "nix-daemon-version: %s" (first versions))))
+          (detail "nix-daemon process executable version label: %s" (first versions))))
       (do
         (set ok false)
-        (failure "single nix-daemon version is active" (print-lines versions))))
+        (failure "single nix-daemon executable version label observed" (print-lines versions))))
 
     (if (empty? rebuild-lines)
       (success "no darwin-rebuild process is active")
@@ -635,7 +710,7 @@
 (defn- check-build-sandbox []
   # Query one scalar, never the complete Nix config (which can contain tokens).
   # Even stderr or malformed scalar output may contain private configuration.
-  (let [result (run @["nix" "config" "show" "sandbox"])]
+  (let [result (nix-identity-probe @["nix" "config" "show" "sandbox"])]
     (if (not (= 0 (result :status)))
       (failure "Could not inspect client build sandbox policy (diagnostic output withheld)")
       (case (string/trim (result :out))
@@ -651,13 +726,14 @@
 (defn- doctor-nix []
   (if (dryrun?)
     (do
-      (echof "DRYRUN: nix store info --store daemon")
+      (echof "DRYRUN: resolve invocation PATH and Hey Nix clients; run each --version")
+      (echof "DRYRUN: Hey client: nix store info --store daemon --json")
       (echof "DRYRUN: nix config show sandbox (client policy only)")
       (echof "DRYRUN: %s" (string/join process-table/argv " "))
       (echof "DRYRUN: check nix-daemon, nix-store --optimise, darwin-rebuild, and build worker process state"))
     (do
       (var ok true)
-      (unless (check-daemon)
+      (unless (check-nix-identities)
         (set ok false))
       (unless (check-build-sandbox)
         (set ok false))
@@ -728,40 +804,49 @@
     (filter path/exists? [(path :home) (path :modules)])))
 
 (defn- inline-secret-markers []
-  (let [result (run (array/concat
+  (let [paths (secret-scan-paths)
+        pattern (string "(tskey-auth|::server:|SOPS_AGE_KEY=|AGE-SECRET-KEY-1|"
+                        "password:[[:space:]]+[A-Za-z0-9+/=]{8,}|"
+                        "\\$(1|5|6|y)\\$|\\$2[aby]\\$[0-9]{2}\\$|\\$argon2(id|i|d)\\$|"
+                        "-----BEGIN (RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----|"
+                        "-----BEGIN PGP PRIVATE KEY BLOCK-----|PuTTY-User-Key-File-[23]:)")]
+    (when (empty? paths) (break {:out "" :status 2}))
+    (let [result (run (array/concat
                       @["rg" "--no-config" "--json" "--hidden" "--no-ignore" "--glob" "!.git" "--glob" "!.direnv"
                         "--glob" "!node_modules" "--glob" "!target" "--glob" "!result" "--glob" "!result-*"
-                        "-n" "-o" "(tskey-auth|::server:|SOPS_AGE_KEY=|password:[[:space:]]+[A-Za-z0-9+/=]{8,})" "--"]
-                      (secret-scan-paths)))]
-    (case (result :status)
-      0 (try
+                        "-n" "-o" pattern "--"]
+                      paths))]
+      (if (and (index-of (result :status) [0 1]) (empty? (result :err)))
+        (try
           (let [locations (sort (unique-lines (keep redact-secret-event (nonempty-lines (result :out)))))]
-            (when (empty? locations) (error "Successful scan returned no matches"))
-            {:out (print-lines locations) :status 0})
+            (unless (= (= 0 (result :status)) (not (empty? locations)))
+              (error "Scan status and events disagree"))
+            {:out (print-lines locations) :status (result :status)})
           ([err fib] {:out "" :status 2}))
-      1 {:out "" :status 1}
-      {:out "" :status (result :status)})))
+        {:out "" :status 2}))))
 
 (defn- doctor-secrets []
   (if (dryrun?)
     (do
-      (echof "DRYRUN: scan hosts, modules, and .envrc for inline secret markers"))
+      (echof "DRYRUN: scan configured source roots for inline secret markers%s"
+             (if (dyn :doctor-strict false) " (strict)" "")))
     (if (not (path/find "rg"))
       (do
         (failure "ripgrep command is available")
-        (exit 1))
+        (exit 2))
       (let [result (inline-secret-markers)]
         (case (result :status)
           0 (if (empty? (result :out))
               (echo :check "no inline secret markers found")
               (do
                 (warning "inline secret markers found" (result :out))
-                (echof :warn "move these to runtime secret files managed by your secret provider")))
+                (echof :warn "move these to runtime secret files managed by your secret provider")
+                (when (dyn :doctor-strict false) (exit 1))))
           1 (echo :check "no inline secret markers found")
           (do
             (failure "inline secret marker scan failed"
                      (string "Scan status " (result :status) "; check scan roots and permissions. Raw scanner output is withheld."))
-            (exit 1)))))))
+            (exit 2)))))))
 
 (defn- shell-profile []
   (if (dryrun?)
@@ -860,7 +945,7 @@
 (defn- doctor-sync []
   (if (dryrun?)
     (do
-      (echof "DRYRUN: check hostname, flake host, dotfiles path, NIX_CONFIG, rebuild tools, nom, and active hey"))
+      (echof "DRYRUN: check hostname, flake host, dotfiles path, NIX_CONFIG, Nix/sudo, nom, and active hey"))
     (do
       (var ok true)
       (let [host (flake :host)
@@ -886,14 +971,16 @@
         # Store selection is consumer policy. Never echo raw configuration:
         # NIX_CONFIG can contain access-tokens or authenticated URLs.
         (detail "NIX_CONFIG: %s" (if (empty? nix-config) "<unset>" "<set; contents hidden>")))
-      (case (command-output-trimmed @["uname"])
-        "Darwin" (unless (check-command-available "darwin-rebuild")
-                   (set ok false))
-        "Linux" (unless (check-command-available "nixos-rebuild")
-                  (set ok false))
-        (do
+      (unless (index-of (command-output-trimmed @["uname"]) ["Darwin" "Linux"])
+        (set ok false)
+        (failure "supported operating system"))
+      (each command ["nix" "sudo"]
+        (unless (check-command-available command) (set ok false)))
+      (if-let [helper (os/getenv "HEY_SYSTEM_ACTIVATOR")]
+        (unless (path/executable? helper)
           (set ok false)
-          (failure "supported operating system")))
+          (failure "packaged system activator is available"))
+        (detail "Source launcher: the activation helper will be built as the caller when needed."))
       (when (= "1" (os/getenv "HEY_NIX_USE_NOM"))
         (unless (path/find "nom")
           (warning "nom was requested but is unavailable; Nix will run without it")))
@@ -986,12 +1073,15 @@
     (echo :check "zed doctor passed")
     (exit 1)))
 
-(defcmd doctor [_ subcmd & args &opts profile? --profile quiet? --quiet verbose-opt? --verbose]
+(defcmd doctor [_ subcmd & args &opts profile? --profile quiet? --quiet verbose-opt? --verbose strict? --strict]
   (setdyn :doctor-verbose verbose-opt?)
+  (setdyn :doctor-strict strict?)
   (when (and quiet? verbose-opt?)
     (abort usage))
   (when (and profile? (not (= subcmd "shell")))
     (abort "Usage: hey doctor shell [--profile]"))
+  (when (and strict? (not (or (nil? subcmd) (= subcmd "secrets"))))
+    (abort "Usage: hey doctor [secrets] --strict"))
   (when (and (= subcmd "fix") (not (= 1 (length args))))
     (abort usage))
   (when (and (not (= subcmd "fix")) (not (empty? args)))

@@ -254,8 +254,9 @@ before `sshd.socket` opens. The socket starts after the certificate/secret
 services rather than during early socket setup. Each per-connection daemon
 reads the latest certificate; no daemon reload is needed in this mode.
 
-User-certificate signing remains an activation operation. Its CA stays in a
-root-owned staging context; final certificate installation runs as `targetUser`.
+User-certificate signing remains an activation operation. The signer receives
+an inherited descriptor for a private CA snapshot; final certificate installation
+runs as `targetUser`.
 The same privilege-dropping installer handles Git secret files. Destination
 directories must already be accessible to the recipient or creatable by them.
 For privileged copies, the source must be an absolute regular file reached only
@@ -267,6 +268,20 @@ rejected before any destination changes. This checks POSIX ownership/modes;
 administrators must also avoid ACLs granting untrusted write access to those
 directories or files. Invocations already running as the recipient use ordinary
 filesystem access, but still require an absolute regular-file source.
+
+CA snapshots have mode `0600` and no filesystem link. Linux uses a sealed
+memory file; Darwin uses an immediately unlinked temporary file inside the
+protected staging directory. The descriptor is inherited only by the selected
+`ssh-keygen` child, then closed on success, failure or a handled interruption.
+Public keys and validated certificates may still use named staging files.
+The existing input checks, signature validation, privilege separation and
+operation deadlines remain in force.
+
+Darwin's anonymous file can be backed by persistent storage, and memory or swap
+may retain key bytes. This provides no memory-zeroization or secure-erasure
+guarantee. An uncatchable kill can leave descriptors alive in surviving processes
+until they exit. Previously created staging directories and original provider
+keys are retained; this change does not authorize cleanup or rotation.
 
 ## Signing Example
 

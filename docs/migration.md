@@ -18,6 +18,12 @@ Alacritty preferences moved to `modules.profiles.alacritty-workstation.enable`;
 the minimal terminal module only sets terminfo and the selected shell. The bundled
 Doom preferences moved to `modules.profiles.doom-workstation.enable`. Custom Doom
 directories can still be supplied directly. Existing assets remain preserved.
+The preset now also owns the former broad Emacs helper collection, Linux
+binutils, symbol font and aliases. Bare Emacs enablement keeps Git, ripgrep and fd;
+Tree-sitter grammars, explicit `extraPackages`, optional LaTeX and runtime-state
+paths retain their wiring. Enable the preset to retain workstation conveniences,
+or declare the subset your configuration needs. Disabling Emacs suppresses the
+preset's side effects; it does not delete existing runtime state.
 Zsh plugins, prompt, aliases, history policy and utilities now require
 `modules.profiles.zsh-workstation.enable`. Tmux bindings, plugins, status tools
 and tmuxifier integration require `modules.profiles.tmux-workstation.enable`.
@@ -36,6 +42,36 @@ and `v` aliases. Atuin retains privacy defaults (`auto_sync = false` and
 `update_check = false`), with settings now configurable through
 `modules.shell.atuin.settings`. Compact UI, Enter/up-arrow behavior and workspace
 preferences move to its preset. Zsh integrations only apply when Zsh is enabled.
+
+Java now follows the same split. `modules.dev.java.enable` installs one selected
+`modules.dev.java.package`, defaulting to the pinned `pkgs.jdk`. The existing
+`openjdk21.enable` and `openjdk25.enable` flags remain compatibility selectors for
+that default; an explicit package takes precedence. Choose at most one legacy
+selector while Java is enabled. Both module entrypoints share one implementation.
+
+To retain Checkstyle, Gradle, the Java language server, Maven and Java session
+variables, enable `modules.profiles.java-workstation.enable`. It defaults the
+runtime on and sets `JAVA_HOME`/`JDK_HOME` only for the selected Home Manager user.
+Other users and root no longer inherit that user's Java choice globally. Native
+user session variables can override these defaults. Java Zsh aliases load only
+when Zsh is enabled; disabling the runtime suppresses preset effects too.
+
+```nix
+{pkgs, ...}: {
+  modules.dev.java = {
+    enable = true;
+    package = pkgs.openjdk25;
+  };
+  modules.profiles.java-workstation.enable = true;
+}
+```
+
+Omit the preset for runtime-only use. Use project development shells for multiple
+JDKs rather than merging competing `java` executables into one user profile.
+The unused `home.configFile.jdks` scaffold is no longer supplied from the empty
+assets directory. Declare any wanted JDK inventory yourself; consumer-owned
+inventory declarations remain intact. No installed files are deleted in this
+source batch.
 
 Tool presets default their base module to enabled. An explicit base-module
 `enable = false` suppresses preset files, packages and hooks as well. Disabling a
@@ -172,7 +208,12 @@ copies now verify the source path as well as the destination. Sources under
 user-writable directories must move to a protected runtime secret-provider
 directory; protected provider symlinks remain supported. A source replaced
 during opening fails safely and can be retried. Nothing relocates secrets or
-changes filesystem ownership automatically.
+changes filesystem ownership automatically. Old installed Git copies remain
+until separately retired. Optional
+`modules.shell.git.secretTracking.enable` records private receipts on future
+installations, enabling a manual exact-receipt preview/apply workflow. It stays
+off by default; existing untracked copies remain subject to private inventory
+and separate cleanup review. See [retirement and interruption recovery](secrets.md#retiring-installed-git-secret-copies).
 
 The public Hey package now installs only `hey` and `myip` (an alias for
 `hey info -r ip`). Enabling Hey no longer adds the framework source `bin/`
@@ -272,11 +313,18 @@ no longer loads Disko for every Linux host. Existing private Cilium VM hosts
 have been updated to retain their disk configuration.
 
 EKS metadata now treats Nix-generated JSON nulls as absent optional values.
+Generic AWS enablement no longer opts into EKS tooling. Consumers that want
+`kubectl`, `k9s`, `kubectx`, `stern` and the managed k9s files must set
+`modules.shell.awscli2.eks.enable = true`. The EKS bastion preset supplies a
+default true that explicit false can override. SSO/SAML configuration and login
+remain independent; this does not revoke credentials or Kubernetes access.
+Preserve wanted workstation tools explicitly before activating this change.
 Password-file-only SAML accounts and account-name profile fallback work with
-that generated metadata. The EKS bastion profile grants passwordless restart
-only for its configured OpenVPN service, and routed EKS shells request an SSH
-terminal. Apply the bastion configuration before relying on the new restart
-permission; updating the local CLI alone cannot change remote sudo policy.
+that generated metadata. Routed EKS shells request an SSH terminal. Passwordless
+OpenVPN control now requires an explicit
+`modules.profiles.eks-bastion.openvpn.allowUserServiceControl = true`.
+It grants start/restart/reset-failed only for that service. Updating the local
+CLI alone cannot change remote sudo policy.
 
 The homelab SOPS profile now selects its declared identity source explicitly.
 If you intentionally combine an age identity file with SSH-derived age or GPG
@@ -310,10 +358,14 @@ Review account privileges before switching existing hosts. The private workspace
 policy explicitly retains this fleet's former group choices; they are not part
 of the published defaults.
 
-Alacritty no longer forces Zsh or supplies shell-specific login arguments. Its
-shell setting is omitted so it uses the account's login shell on both platforms.
-Choose that shell through the native account configuration (or the Linux
-primary-user shell option), not by relying on the terminal to select Zsh.
+Alacritty no longer forces Zsh. Linux omits its shell setting; Darwin explicitly
+uses the configured account shell with login arguments. Choose that shell
+through the native account configuration (or the Linux primary-user shell
+option). Enabled Darwin adapters register the same Alacritty package in the
+system application collection as well as the user environment, so managed
+Finder discovery does not depend on a previously registered store bundle.
+The registration takes effect after reviewed activation; terminal preferences
+and Linux package placement are unchanged.
 
 `modules.editors.default` now defaults to `null`, leaving the editor environment
 unchanged. An explicit command, such as `"nvim"`, supplies a per-user Home Manager
@@ -384,12 +436,29 @@ explicitly, including when activation has no login-shell environment. Both RTK
 initializers use Home Manager's dry-run-aware `run` helper. Existing RTK files in
 a previously selected directory are not moved or removed.
 
-OMP configuration is generated with Nixpkgs' YAML serializer. String values are
-preserved literally, including punctuation and newlines; theme defaults apply
-independently to `theme.dark` and `theme.light`. An explicit `modelRoles.slow`
-now takes precedence over the optional Codex default. The generated config remains
-a Home Manager-managed file at the same path, without taking ownership of agent
-databases or sessions. Its whitespace/quoting can change during the next switch.
+Generic OMP enablement now leaves mutable settings user-managed and selects no
+provider, model, theme, symbol preset or setup version. Existing users who want
+the former managed settings must opt into:
+
+```nix
+modules.profiles.omp-workstation.enable = true;
+```
+
+The preset retains the previous preferences and Codex-dependent provider/model
+defaults, without enabling Codex itself. Ordinary OMP settings override its
+defaults. Alternatively select `modules.agents.omp.manageConfig = true` and
+declare only the fields you want. Optional preference fields now default to
+`null`; explicitly requesting `configureCodexModels` also requires a `codexModel`
+when Codex is enabled. Explicit `modelRoles.slow` retains precedence.
+
+Managed defaults use Nixpkgs' YAML serializer and a Home Manager activation hook
+that merges into private writable user settings. String values retain punctuation
+and newlines; each theme field remains independently overridable. No mutable
+store-backed config is exposed to OMP. Close OMP during activation, since its
+own file lock is independent. Disabling management leaves the existing config,
+managed-key sidecar and runtime state untouched; it does not remove old values
+or credentials. See [OMP ownership and migration](omp.md) for legacy-link repair
+and synchronisation limits.
 
 Darwin Docker no longer forces `DOCKER_HOST` or exports the misspelled
 `COLIMAHOME`. Colima keeps its native state discovery, including existing
@@ -488,20 +557,29 @@ backend on port 3301, an HTTPS public URL on port 8890, or secure cookies behind
 that proxy. For the former integration, explicitly select:
 
 ```nix
-modules.profiles.gitea-tailscale.enable = true;
+modules.profiles.gitea-tailscale = {
+  enable = true;
+  exposure = "tailnet";
+  listenAddresses = [ "100.100.100.10" "fd7a:115c:a1e0::10" ];
+};
 modules.services.gitea.domain = "git.example.ts.net";
 modules.services.tailscale.keyFile = "/run/secrets/tailscale-auth-key";
 ```
 
 This profile defaults the three services on, retains the loopback backend and
 port 8890, and grants Caddy's effective user permission to obtain Tailscale
-certificates. `modules.profiles.gitea-tailscale.httpsPort` changes the public port;
-native Gitea backend settings and the public URL can override profile defaults.
+certificates. Replace the synthetic listen addresses with this host's assigned
+Tailscale addresses. The default tailnet mode requires explicit bindings,
+a loopback backend and no global grant for the HTTPS port. `httpsPort` changes
+that port. Select `exposure = "public"` explicitly for a public deployment;
+certificate selection alone does not provide tailnet isolation.
 Tailscale must be authenticated, the configured domain must be supported by its
 certificate provider, and HTTPS must be enabled in the tailnet. Certificate
 management is [site-scoped](https://caddyserver.com/docs/caddyfile/directives/tls),
 so unrelated public Caddy sites keep normal certificate automation. Existing
-Gitea data is not moved. The affected private host explicitly enables the profile.
+Gitea data is not moved. Review the complete Caddy configuration and test IPv4
+and IPv6 access from tailnet and non-tailnet peers before rollout. See
+[the exposure contract](security.md#gitea-exposure).
 
 The generic K3s server now writes its administrative kubeconfig with mode `0600`.
 It no longer exports that privileged credential to every user's environment.
@@ -510,7 +588,10 @@ credentials for users. Check and revoke any previously copied admin credentials
 according to your cluster's access policy; changing permissions is not revocation.
 
 K3s, Tailscale, Caddy, Gitea and VM profiles no longer turn the firewall off.
-Caddy opens its configured public TCP listeners and Tailscale opens its UDP port.
+Caddy now leaves `services.caddy.openFirewall = false`; explicitly enable it for
+public Caddy deployments or declare narrower firewall rules. The Gitea profile
+grants only its selected interface/global port according to exposure mode.
+Tailscale opens its UDP port.
 Homelab profiles explicitly trust the Tailscale/Cilium interfaces they use.
 For other topologies, declare the required API, cluster and overlay access in
 your own policy. Test reachability before replacing an existing deployment.
@@ -716,13 +797,150 @@ Review the native pruning flags and retained data before enabling it. The prune
 unit can start Docker to perform its work even when `enableOnBoot` is false.
 No existing containers or images are deleted by this configuration change.
 
-The Gitea wrapper now supplies compatibility defaults at `mkDefault` priority.
-Ordinary `services.gitea` settings can override storage, database, mail, backup,
-SSH, and other deployment policy without `mkForce`. Its existing
-`/data/apps/gitea` storage default is deliberately unchanged. No data is moved.
-Changing `stateDir` or database settings still requires a separately planned
-backup and migration; this refactoring does not migrate repositories.
+The Gitea adapter now wires only enablement, domain, display name and log level.
+Existing direct adapter users must select the compatibility preset to retain
+their deployment defaults:
 
-New deployments may configure `services.gitea` directly and omit the wrapper.
-The wrapper retains the three existing convenience options for compatibility;
-it does not add a second set of options mirroring native deployment settings.
+```nix
+modules.profiles.gitea-compatibility.enable = true;
+modules.services.gitea.domain = "git.example.test";
+```
+
+This preset retains `/data/apps/gitea`, SQLite, LFS, dump, mail, SSH and login
+defaults at `mkDefault` priority. Ordinary `services.gitea` settings still override
+them without `mkForce`. The Gitea/Tailscale preset selects compatibility by
+default, preserving its previous deployment policy.
+
+To deliberately use native deployment defaults through the adapter:
+
+```nix
+modules.services.gitea = {
+  enable = true;
+  domain = "git.example.test";
+  deploymentPolicy = "native";
+};
+modules.profiles.gitea-compatibility.enable = false;
+```
+
+An active adapter requires exactly one policy choice. Missing or ambiguous
+choices fail an assertion before activation, preventing a silent switch to
+native storage defaults. Disabling the adapter or the native service suppresses
+the compatibility policy. New deployments may configure `services.gitea`
+directly and omit both the adapter and preset.
+
+The native selector performs no data migration. Review storage, database, mail
+and authentication settings before selecting it. Changing `stateDir` or database
+settings requires a separately planned backup and migration; this refactoring
+does not move repositories or convert data.
+
+## Reconciled security hardening
+
+`hey sync` now builds as the normal user before requesting sudo for fixed-output
+activation. Do not run the whole command with sudo or copy personal Git/SSH
+credentials into root's home. The privileged helper receives candidate and
+selected/running checkpoint store paths with a clean environment. Custom
+activation hooks must embed needed paths in their configuration; they no longer
+inherit caller `DOTFILES`, `DOTFILES_HOME`, `NIX_CONFIG` or SSH agent state.
+User build/activation failures preserve their exit status and release the caller
+lock/temporary roots. The helper attempts guarded output recovery after activation
+failure, but cannot restore arbitrary writable application or Homebrew state.
+
+Local default-system profiles with modern activation layouts are supported.
+Remote deployment, custom profiles, specialisations, bootstrap and legacy
+`activate-user` require a separately reviewed native procedure. Supported action
+and build-option details are in [Hey workflows](hey.md#local-sync-builds-and-activation).
+`--fast` remains a compatibility flag; direct builds never re-execute a rebuild
+frontend. Linux VM builds can use configured cross/remote builders without
+granting activation privileges. No passwordless activation rule was added.
+Native root/VM and actual private-input checks remain rollout gates; the old
+one-time migration procedure and its protected recovery material remain intact.
+
+Linux Docker and K3s adapters now default their native enable flags, so ordinary
+`virtualisation.docker.enable = false`,
+`virtualisation.docker.rootless.enable = false` and
+`services.k3s.enable = false` take effect without `mkForce`. Docker client tools,
+aliases and client state paths remain available for remote Docker use. A disabled
+root daemon receives no adapter-granted docker group membership; explicit user
+groups remain unchanged. A disabled K3s service receives no agent helper package
+or Cilium recipe manifests, CLI or firewall trust. The selected K3s adapter still
+requires its corresponding role when the native service is enabled. Adapter
+enable switches express requested configuration, not observed daemon state.
+Homelab presets also suppress K3s unit dependencies and Cilium interface trust
+when K3s is disabled; their explicitly enabled Tailscale policy remains in force.
+
+The Cilium recipe now shares one API port and IPv4 pod CIDR with K3s:
+
+```nix
+modules.services.k3s-server.enable = true;
+modules.profiles.k3s-cilium = {
+  enable = true;
+  apiHost = "control-plane.example.invalid";
+  apiPort = 7443;
+  podCIDRs = ["192.0.2.0/24"]; # documentation-only example; choose your network
+};
+```
+
+Set those profile options instead of adding native `--https-listen-port` or
+`--cluster-cidr` flags. Managed network flags must appear exactly once as
+canonical list entries; duplicate, split, conflicting or missing flags fail
+evaluation. The generated HelmChart must retain matching API/IPAM settings,
+IPv4 cluster-pool mode and kube-proxy replacement. Whole native values overrides
+remain possible when these invariants hold; incompatible or opaque values fail.
+This recipe supports one IPv4 pool. Compose native services directly for other
+topologies. Homelab `podCIDR` continues to feed the same shared settings.
+
+This establishes source consistency, not a live network guarantee. Runtime K3s
+configuration/environment files, systemd command overrides, all cluster servers
+and actual reachability still need review. K3s documents
+[cluster-wide critical settings](https://docs.k3s.io/cli/server#critical-configuration-values),
+including the pod CIDR and CNI flags. Changing an existing cluster's pod network
+requires a separate migration plan; these source changes do not migrate it.
+Disposable Linux boot/network tests remain a release gate.
+
+SSH certificate signing now passes an anonymous CA snapshot descriptor to
+`ssh-keygen`, replacing the named `ca` staging copy. Linux uses sealed memory;
+Darwin uses an immediately unlinked temporary file. Configured source paths,
+certificate validation, privileges and deadlines retain their existing contract.
+Darwin storage may retain bytes and surviving processes may retain descriptors
+after an uncatchable kill. Old staging directories and provider keys are left
+intact; cleanup and rotation require their own review. See [SSH lifecycle](ssh.md).
+
+The Darwin Hey adapter no longer sources the installer-owned `nix-daemon.sh`
+after nix-darwin's environment setup. That extra bootstrap could put an old
+installer-profile client ahead of the configured system client in every fresh
+zsh. Native nix-darwin initialization remains responsible for Nix setup and
+profile ordering; Hey still adds its own launcher/completions. This change does
+not uninstall an installer profile, alter daemon state or modify stored
+generations. After normal reviewed activation, verify fresh login, interactive,
+tmux and development-shell client selection with `hey doctor nix --verbose`.
+The diagnostic reports the original caller PATH client, Hey's client and the
+connected daemon separately; mismatches warn, incomplete probes fail.
+
+OpenVPN's EKS bastion adapter now stages a protected runtime snapshot before
+starting. Move its client config, private keys and credentials into root-owned,
+root-private files under protected root-owned directories; public certificate
+files may be readable by others but must not be writable by them. Supported
+provider symlinks must also resolve through protected directories. ACLs must not
+grant untrusted writes. Relative references, includes, scripts, plugins,
+management interfaces and arbitrary output-file directives are rejected.
+Review the [supported subset](../tools/openvpn_client.py) before switching;
+advanced configurations need a separately reviewed native OpenVPN service.
+Native up/down/resolver hooks and native inline authUserPass are incompatible.
+Declare either a combined two-line authFile or both split credential paths.
+The helper preserves meaningful credential spaces and copies referenced inputs
+into the root-private runtime directory. Linux VM/boot acceptance is still
+required; do not deploy the change over a sole remote access path without it.
+
+`CODEX_HOME` now belongs to the selected user's Home Manager session variables.
+Start a fresh login session after activation. Existing Codex state is not moved.
+Verify GUI launches separately when using a custom home, because desktop apps
+may not inherit shell session variables.
+
+Inline SAML usernames become Nix store contents even when supplied through
+private source. For sensitive values, leave `username = null` and configure
+`usernameFile` through a runtime secret provider. This source change does not
+remove historical store files or revoke previously exposed credentials.
+
+`hey doctor secrets --strict` provides a local marker gate: 0 clean, 1 findings,
+2 incomplete/failed scan. Warning-only mode remains the default. This scan does
+not replace review and independent scanning of the exact publication export.

@@ -1,5 +1,7 @@
 """Bounded SSH certificate preparation; no user-path reads with root's authority."""
 import argparse
+from contextlib import contextmanager
+import fcntl
 import io
 import json
 import os
@@ -52,11 +54,12 @@ def worker_command(*arguments):
     return [sys.executable, "-I", "-c", entry, *arguments]
 
 
-def run_child(command, *, capture=False, timeout=30):
+def run_child(command, *, capture=False, timeout=30, pass_fds=()):
     environment = os.environ | {"SSH_ASKPASS_REQUIRE": "never", "LC_ALL": "C", "TZ": "UTC"}
     child = subprocess.Popen(command, stdin=subprocess.DEVNULL,
                              stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
-                             stderr=subprocess.DEVNULL, env=environment, start_new_session=True)
+                             stderr=subprocess.DEVNULL, env=environment, start_new_session=True,
+                             pass_fds=pass_fds)
     try:
         output, _ = child.communicate(timeout=timeout)
         return child.returncode, output
@@ -68,6 +71,34 @@ def run_child(command, *, capture=False, timeout=30):
             except ProcessLookupError:
                 pass
             child.wait()
+
+
+@contextmanager
+def anonymous_ca(data, directory):
+    """Give the signer a snapshot descriptor without a named private-key copy.
+
+    Linux uses a sealed memory file. Darwin uses an immediately unlinked regular
+    temporary file: no persistent name survives a crash, but its bytes may reach
+    disk/swap. This does not promise cryptographic erasure or memory zeroization.
+    """
+    memory_file = hasattr(os, "memfd_create")
+    if memory_file:
+        stream = os.fdopen(os.memfd_create("nixi-ssh-ca", os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING), "w+b")
+    else:
+        stream = tempfile.TemporaryFile(mode="w+b", dir=directory)
+    with stream:
+        fd = stream.fileno()
+        os.fchmod(fd, 0o600)
+        # Refuse a platform/runtime that leaves a named file behind.
+        if os.fstat(fd).st_nlink != 0:
+            raise CertificateError("Anonymous SSH signing storage is unavailable")
+        stream.write(data)
+        stream.flush()
+        stream.seek(0)
+        if memory_file:
+            fcntl.fcntl(fd, fcntl.F_ADD_SEALS,
+                        fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL)
+        yield fd
 
 
 def read_user_key(path, user, group):
@@ -138,14 +169,13 @@ def prepare(args):
         if args.source_file:
             certificate = source
         else:
-            ca = root / "ca"
-            ca.write_bytes(source)
             key_path = root / "key.pub"
             key_path.write_bytes(key)
-            status, _ = run_child([args.ssh_keygen, "-q", *( ["-h"] if args.command == "host" else []),
-                                   "-s", str(ca), "-I", args.identity + "-" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()),
-                                   "-n", ",".join(principals), "-V", args.validity,
-                                   "-z", str(time.time_ns()), str(key_path)])
+            with anonymous_ca(source, root) as ca_fd:
+                status, _ = run_child([args.ssh_keygen, "-q", *( ["-h"] if args.command == "host" else []),
+                                       "-s", f"/dev/fd/{ca_fd}", "-I", args.identity + "-" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()),
+                                       "-n", ",".join(principals), "-V", args.validity,
+                                       "-z", str(time.time_ns()), str(key_path)], pass_fds=(ca_fd,))
             if status:
                 raise CertificateError("SSH signing failed (CA must be usable noninteractively)")
             certificate = read_bounded(root / "key-cert.pub")

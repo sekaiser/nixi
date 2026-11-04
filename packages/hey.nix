@@ -12,6 +12,7 @@
   homeBinDir ? null,
   processSupervisor ? callPackage ./process-supervisor.nix {},
   runtimePython ? callPackage ./hey-python.nix {},
+  systemActivator ? callPackage ./system-activation.nix {},
   lib,
   janet,
   jpm,
@@ -27,6 +28,7 @@
     export JANET_TREE=${lib.escapeShellArg (toString heyJanetDeps)}
     export HEY_PROCESS_SUPERVISOR=${lib.escapeShellArg "${processSupervisor}/bin/nixi-process-supervisor"}
     export HEY_RUNTIME_PYTHON=${lib.escapeShellArg "${runtimePython}/bin/python3"}
+    export HEY_SYSTEM_ACTIVATOR=${lib.escapeShellArg "${systemActivator}/bin/nixi-system-activate"}
     if [ -z "''${XDG_BIN_HOME:-}" ]; then
       XDG_BIN_HOME=${
       if homeBinDir == null

@@ -1,0 +1,32 @@
+Subject: [LOCAL PROPOSAL] Require whole usernames during TRAMP expansion validation
+License: GPL-3.0-or-later (changes to GNU Emacs)
+
+Apply to GNU Emacs 31.1 after Nixpkgs' CVE-2026-108976 patch.
+This is source-only validation hardening, not an applied Nixi package change.
+Whole-string matching at the domain split preserves invalid input for rejection;
+whole-string revalidation checks the complete expanded/default username.
+Host grammar and existing connection-local percent policy are unchanged.
+No CVE assignment, upstream acceptance or consumer exploitability is claimed.
+
+--- a/lisp/net/tramp.el
++++ b/lisp/net/tramp.el
+@@ -1855,7 +1855,8 @@
+ 	(when user
+ 	  (while (string-match (rx bos "$" (group (+ (any "_" alnum))) eos) user)
+ 	    (setq user (getenv (match-string 1 user))))
+-	  (when (string-match tramp-user-with-domain-regexp user)
++	  (when (string-match
++		 (rx bos (regexp tramp-user-with-domain-regexp) eos) user)
+ 	    (setq domain (match-string 2 user)
+ 		  user (match-string 1 user))))
+ 
+@@ -1910,7 +1911,8 @@
+ 	      ;; environment variables, or contain a literal
+ 	      ;; environment variable.
+ 	      (unless (tramp-string-empty-or-nil-p user)
+-		(when (or (not (string-match-p tramp-user-regexp user))
++		(when (or (not (string-match-p
++			   (rx bos (regexp tramp-user-regexp) eos) user))
+ 			  (string-match-p
+ 			   (rx "$") (tramp-file-name-user-domain v))
+ 			  (and (not allow-double-percent)

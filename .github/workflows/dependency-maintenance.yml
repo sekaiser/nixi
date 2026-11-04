@@ -32,6 +32,13 @@ jobs:
           python3 tools/release.py export --destination "$RUNNER_TEMP/public-candidate"
           mkdir -m 700 "$RUNNER_TEMP/dependency-reports"
       - uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
+      - name: Inventory reviewed public dependency coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/public-candidate"
+          python3 tools/dependency_scan.py inventory \
+            --output "$RUNNER_TEMP/dependency-reports/inventory.json"
       - name: Report pin age and override review deadlines
         id: lifecycle
         continue-on-error: true
@@ -53,23 +60,17 @@ jobs:
             "$RUNNER_TEMP/dependency-reports/flake.lock.proposed" \
             > "$RUNNER_TEMP/dependency-reports/update.patch" || status=$?
           test "$status" -le 1
-      - name: Scan current public Hey build dependencies
+      - name: Audit the committed public MemoryCore npm lock
         id: advisories
         continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/public-candidate"
-          # Evaluate only the current public target; no host build or activation.
-          drv="$(nix eval --raw --no-write-lock-file --no-update-lock-file \
-            --option allow-import-from-derivation false --option accept-flake-config false \
-            .#packages.x86_64-linux.hey.drvPath)"
-          # Scanner comes from the locked upstream snapshot. Optional framework
-          # overrides are not enabled by either this scan or the report.
           nix shell --inputs-from . --no-write-lock-file --no-update-lock-file \
-            --option accept-flake-config false nixpkgs#vulnix \
-            --command vulnix --no-default-whitelist --json -- "$drv" \
-            > "$RUNNER_TEMP/dependency-reports/advisories.json"
+            --option allow-import-from-derivation false --option accept-flake-config false \
+            nixpkgs#nodejs_24 --command python3 tools/dependency_scan.py npm --npm npm \
+            --output "$RUNNER_TEMP/dependency-reports/npm-audit.json"
       - name: Record report completeness
         if: always()
         env:
@@ -77,17 +78,27 @@ jobs:
           ADVISORIES_OUTCOME: ${{ steps.advisories.outcome }}
         shell: bash
         run: |
-          test -d "$RUNNER_TEMP/dependency-reports" || exit 0
-          printf 'Lifecycle step: %s\nAdvisory step: %s\nProposals are unvalidated; no merge or deployment occurred.\nReview step logs: a failed scan is not a clean report.\n' \
+          mkdir -p -m 700 "$RUNNER_TEMP/dependency-reports"
+          printf 'Lifecycle step: %s\nNpm advisory step: %s\nProposals are unvalidated; no merge or deployment occurred.\nReview step logs: a failed scan is not a clean report.\n' \
             "$LIFECYCLE_OUTCOME" "$ADVISORIES_OUTCOME" \
             > "$RUNNER_TEMP/dependency-reports/status.txt"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = Path(os.environ['RUNNER_TEMP']) / 'dependency-reports/npm-audit.json'
+          if not report.exists():
+              with report.open('x') as outgoing:
+                  json.dump({'version': 1, 'mode': 'npm', 'status': 'incomplete',
+                             'failure': 'No completed scanner report was produced.'}, outgoing)
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: dependency-maintenance
           path: |
             ${{ runner.temp }}/dependency-reports/lifecycle.json
-            ${{ runner.temp }}/dependency-reports/advisories.json
+            ${{ runner.temp }}/dependency-reports/inventory.json
+            ${{ runner.temp }}/dependency-reports/npm-audit.json
             ${{ runner.temp }}/dependency-reports/flake.lock.proposed
             ${{ runner.temp }}/dependency-reports/update.patch
             ${{ runner.temp }}/dependency-reports/status.txt
@@ -102,3 +113,76 @@ jobs:
         run: |
           test "$LIFECYCLE_OUTCOME" = success
           test "$ADVISORIES_OUTCOME" = success
+
+  scan:
+    # Metadata scans run on Linux even for Darwin roots; no target is realized.
+    if: github.event.repository.private == false && vars.NIXI_DEPENDENCY_MAINTENANCE == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        system: [aarch64-darwin, aarch64-linux, x86_64-linux]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Export only reviewed public files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d hosts
+          python3 tools/release.py export --destination "$RUNNER_TEMP/public-scan"
+          mkdir -m 700 "$RUNNER_TEMP/scan-reports"
+      - uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
+      - name: Record public inventory and exclusions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/public-scan"
+          python3 tools/dependency_scan.py inventory --output "$RUNNER_TEMP/scan-reports/inventory.json"
+      - name: Scan public derivation dependencies
+        id: advisories
+        continue-on-error: true
+        env:
+          SCAN_SYSTEM: ${{ matrix.system }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/public-scan"
+          # No arbitrary host/installable argument; roots come from checked policy.
+          nix shell --inputs-from . --no-write-lock-file --no-update-lock-file \
+            --option allow-import-from-derivation false --option accept-flake-config false \
+            nixpkgs#vulnix --command python3 tools/dependency_scan.py nix \
+            --system "$SCAN_SYSTEM" --scanner vulnix --output "$RUNNER_TEMP/scan-reports/advisories.json"
+      - name: Preserve incomplete acquisition or scan status
+        if: always()
+        env:
+          SCAN_SYSTEM: ${{ matrix.system }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          directory = Path(os.environ['RUNNER_TEMP']) / 'scan-reports'
+          directory.mkdir(mode=0o700, exist_ok=True)
+          report = directory / 'advisories.json'
+          if not report.exists():
+              with report.open('x') as outgoing:
+                  json.dump({'version': 1, 'mode': 'nix', 'system': os.environ['SCAN_SYSTEM'],
+                             'status': 'incomplete', 'failure': 'No completed scanner report was produced.'}, outgoing)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: dependency-advisories-${{ matrix.system }}
+          path: ${{ runner.temp }}/scan-reports/*.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Require attention for findings or incomplete scans
+        if: always()
+        env:
+          ADVISORIES_OUTCOME: ${{ steps.advisories.outcome }}
+        shell: bash
+        run: test "$ADVISORIES_OUTCOME" = success

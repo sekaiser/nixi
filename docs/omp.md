@@ -1,7 +1,45 @@
 # OMP settings and ownership
 
-`modules.agents.omp.manageConfig` synchronises declared defaults into a private,
-user-owned, writable YAML file during Home Manager activation. Nix owns the
+`modules.agents.omp.enable` exposes diagnostics and an optional package. Settings
+remain user-managed by default: no activation hook or defaults YAML is emitted,
+and enabling Codex alongside OMP does not select a provider or model. Command,
+state-directory and config-file diagnostics still default on; disable the
+corresponding `check*` options if those expectations do not fit your installation.
+
+To retain the former managed workstation settings, opt into:
+
+```nix
+modules.profiles.omp-workstation.enable = true;
+```
+
+The preset defaults OMP on and opts into writable-settings synchronisation. It
+retains Unicode symbols, setup version 1 and Titanium/light themes. If Codex is
+already enabled, it also selects the former Codex search provider and slow-model
+default. It does not enable Codex or install OMP unless a package is supplied.
+These are compatibility choices, not current provider/model recommendations.
+Ordinary OMP option values override preset defaults. `manageConfig = false`
+suppresses synchronisation; `enable = false` suppresses the OMP integration.
+
+For a smaller declaration without the preset:
+
+```nix
+modules.agents.omp = {
+  enable = true;
+  manageConfig = true;
+  theme.dark = "consumer-theme";
+  modelRoles.slow = "example/model";
+};
+```
+
+Only declared fields are synchronised. Theme fields, `symbolPreset`,
+`setupVersion` and `webSearchProvider` default to `null`, which omits them;
+`manageConfig = true` alone selects no preferences. The optional legacy
+`configureCodexModels` convenience requires an explicit `codexModel` when Codex
+is enabled. An explicit `modelRoles.slow` overrides that role. The preset supplies
+both convenience values; set `configureCodexModels = false` to suppress its role.
+
+With management explicitly selected, Home Manager activation synchronises
+declared defaults into a private, user-owned, writable YAML file. Nix owns the
 defaults, not the mutable file or OMP's credentials, sessions, databases or caches.
 
 The mutable file defaults to `~/.omp/agent/config.yml`. Declared keys are refreshed
@@ -13,7 +51,8 @@ YAML formatting and comments may be normalised when defaults are synchronised.
 
 OMP may edit settings between activations. Close OMP before activating changes;
 the activation lock serialises Nixi activations, not OMP's independent file lock.
-Set `manageConfig = false` to leave the configuration entirely user-managed.
+Turning management off leaves the existing config and private sidecars in place.
+It does not retire previously applied values, move state or revoke credentials.
 
 Older Nixi configurations linked the mutable file into the Nix store. OMP resolves
 that symlink when saving, then replaces its target with a mode-0600 file. Running

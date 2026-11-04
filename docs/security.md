@@ -38,6 +38,13 @@ the public release. Publish only a reviewed export with new Git history.
   [protected SOPS adapter](secrets.md#protected-sops-sources-on-macos); provider
   directories are checked without relaxing this boundary. Runtime identity
   paths must be quoted strings to avoid importing private key files into the store.
+- Git secret declarations retain their installed copies when removed. Optional
+  private runtime receipts support manual exact-target retirement by the
+  recipient, with preview/token checks, identity/content validation and private
+  quarantine recovery. No declaration removal or activation performs cleanup.
+  Receipts are not authority to delete unrelated files or evidence of revocation.
+  Stop independent writers; same-user malicious processes and filesystem ACLs
+  are outside this POSIX-mode boundary. See [lifecycle limits](secrets.md#retiring-installed-git-secret-copies).
 - Nixi runtime-secret options reject Nix path literals, contextual strings,
   store paths, and noncanonical absolute paths. This covers Git secrets, SSH CA
   keys, SAML credentials, OpenVPN files, K3s tokens, Tailscale auth keys and the
@@ -56,6 +63,32 @@ the public release. Publish only a reviewed export with new Git history.
   fail before replacement. Host destinations also require protected, no-follow
   ancestor traversal. The Python wrappers clear Nix-specific import/executable
   environment overrides before startup, in addition to isolated mode.
+  Signing passes a mode-`0600`, unlinked CA snapshot descriptor only to the
+  selected signer. Linux uses a sealed memory file; Darwin uses immediately
+  unlinked temporary storage. Named staging files contain public material.
+  Darwin storage and swap can retain bytes; no erasure/zeroization is promised.
+  See [signing lifecycle limits](ssh.md).
+
+## Local build and activation authority
+
+Ordinary sync evaluates/builds as the caller, then invokes the immutable
+activation helper with fixed candidate and checkpoint store paths. The helper
+does not accept a flake reference, arbitrary command, alternate system profile
+or caller build options. Sudo starts with a clean environment. The helper uses
+pinned Nix programs for validity checks and profile selection, validates protected
+store executables, checks both selected/running checkpoints and uses a global
+helper lock. Failure recovery is guarded against observed concurrent changes;
+incomplete recovery is an error, not successful rollback.
+
+The Nix daemon/store, installed runtime/helper, chosen closure and activation
+scripts remain trusted. Activating arbitrary user-built code grants administrative
+authority. This adds no sudoers rights or sandbox boundary. Runtime hooks and
+Homebrew may still have network and writable-state effects; fixed Nix outputs
+do not reverse those effects. Legacy profile rollback and external rebuild/prune
+tools do not share the new helper lock and must not run concurrently.
+See [supported actions, credentials and recovery limits](hey.md#local-sync-builds-and-activation).
+Real-root/native Linux/VM and private-input compatibility checks remain required
+before consumer rollout; synthetic fixtures do not establish those guarantees.
 
 ## Generic runtime versus optional infrastructure
 
@@ -171,6 +204,14 @@ malformed, disabled and mismatched entries fail the check. Config files are
 limited to 1 MiB and five seconds; parser errors never echo their input.
 This validates syntax and the explicitly expected entries, not each vendor's
 complete configuration schema or an MCP server's runtime health.
+OMP enablement leaves settings user-managed by default. Only explicit
+`manageConfig` or the `omp-workstation` preset installs its synchronisation hook;
+the latter retains the previous themes and Codex-dependent workflow preferences.
+The hook runs for the selected Home Manager user and merges declared defaults
+into a private writable file, preserving undeclared settings. It refuses root,
+untrusted runtime paths and unsupported symlinks. Disabling management leaves
+existing config and sidecars untouched. Close OMP before activation: the hook's
+lock does not serialise OMP's independent writes. See [ownership limits](omp.md).
 Packaged Hey includes its Python/TOML/YAML runtime. Source checkouts use
 `HEY_RUNTIME_PYTHON` from `nix develop`, or Python 3.11+ with PyYAML and
 Cryptography on PATH. The shared runtime is defined by `packages/hey-python.nix`.
@@ -223,6 +264,15 @@ interactive work, until that investigation is complete.
 
 ## Publication gate
 
+Public dependency maintenance uses a checked representative coverage policy and
+fresh allowlist-only staging before evaluation or network scans. It inventories
+package/component sources, scans public package/default service roots on three
+systems and separately audits the committed npm lock. Private consumer roots
+are refused; host closures and raw scanner diagnostics are not uploaded. Failed,
+ambiguous or missing scans remain incomplete. Full Doom graphs, image layers,
+bundled libraries and consumer selections are explicit gaps; see
+[coverage and report semantics](dependencies.md#public-coverage-inventory-and-scan-runner).
+
 Review manually pinned dependencies as well as `flake.lock`; see
 [dependency maintenance](dependencies.md). Content hashes establish which bytes
 were selected, not whether that version is still supported or secure.
@@ -233,3 +283,81 @@ workspace mounted. Scan staged files again before the first public commit.
 Hash verification detects content drift; it is neither a signature nor proof
 that a reviewer recognized every sensitive value. Never upload private scan
 patterns, scan reports, personal system closures or their build logs.
+
+## Protected OpenVPN client
+
+The EKS bastion adapter runs OpenVPN as root. Its runtime config is privileged
+input even when it contains no credentials. Before starting, the adapter reads
+it and each referenced input through pinned, root-owned directories without
+group/world write permission. Protected secret-provider symlinks are supported;
+no-follow opens and descriptor identity checks reject replacement at the final
+open. The config, private keys and credentials must be root-owned and have no
+group/world permissions; public certificates must be root-owned and not
+writable by other users. ACLs granting untrusted access are outside these checks.
+
+The adapter accepts a restricted client directive set, defined in
+[`openvpn_client.py`](../tools/openvpn_client.py). It rejects scripts, plugins,
+nested configs, management interfaces, arbitrary output paths and relative file
+references. Supported file references are copied into the service's root-private
+`/run/openvpn-NAME` directory and rewritten to those snapshots. Credentials use
+mode `0400`; the directory uses `0700`. Inputs are validated before output
+replacement. Reads have a five-second deadline, bounded individual sizes,
+at most 32 file references and a 16 MiB aggregate limit. These POSIX checks do
+not prevent a trusted root/provider from changing an already opened inode;
+providers should replace generations atomically.
+
+Native up/down hooks, resolver scripts and inline native authUserPass are
+incompatible with this adapter. Use a separately reviewed native service for
+features outside the supported subset. Nix modules, systemd overrides and the
+root administrator remain trusted code; this is not a sandbox for hostile host
+configuration.
+
+`allowUserServiceControl` defaults to false. Explicitly enabling it grants only
+passwordless `start`, `restart` and `reset-failed` for the configured service.
+Those rights operate a root service and require review of every service input.
+Synthetic tests exercise parser rejection, bounded reads, replacement behavior
+and generated grants. Native Linux/systemd and symlink-race acceptance remains a
+release gate; a Darwin fixture does not establish that boundary at boot.
+
+## Gitea exposure
+
+`modules.profiles.gitea-tailscale.exposure` defaults to `"tailnet"`. Supply the
+host's assigned Tailscale IPv4 and/or IPv6 addresses in `listenAddresses`.
+The effective native Caddy virtual host must bind explicit addresses in the
+Tailscale ranges, the Gitea backend must stay on loopback, and the firewall must
+remain enabled without a global grant for that HTTPS port. The profile grants
+TCP access on the Tailscale interface. Assertions also inspect native listener,
+backend and global port overrides.
+
+`exposure = "public"` explicitly permits a global HTTPS firewall grant and may
+use wildcard listeners. Obtaining a Tailscale certificate does not restrict who
+can connect. Caddy's generic adapter leaves `openFirewall = false`; public
+Caddy deployments must opt into their intended openings. Caddy's `bind`
+[controls listener addresses](https://caddyserver.com/docs/caddyfile/directives/bind);
+its [automatic HTTPS behavior](https://caddyserver.com/docs/automatic-https)
+includes runtime listeners/redirects that must be checked with the full service.
+
+Other virtual hosts, custom Caddy JSON/config files, trusted firewall interfaces,
+extra rules, NAT and native systemd overrides remain trusted consumer policy.
+Review the complete deployment and test IPv4/IPv6 reachability from tailnet and
+non-tailnet peers before rollout. Configuration assertions and Caddy adaptation
+alone do not prove network isolation or replace Tailscale access rules.
+
+Deployment policy is selected separately from network exposure. The Gitea
+adapter supplies identity/log wiring; `gitea-compatibility` retains its former
+storage, SQLite, LFS, dump, mail and login defaults. The Tailscale preset selects
+compatibility by default. Direct adapter users must explicitly select that
+preset or `deploymentPolicy = "native"`; missing or conflicting choices fail an
+assertion. Retaining old defaults is a compatibility measure, not a security
+endorsement. Review native overrides and plan backups/data migration separately.
+The selector moves no data, and configuration/parser checks do not establish
+database, authentication, mail or boot acceptance.
+
+## Per-user Codex state
+
+The Codex adapter exports `CODEX_HOME` through the selected user's Home Manager
+session variables. It does not set the framework's global environment. Generated
+shell tests cover the selected user, another user and root for Linux and Darwin
+configurations. GUI applications need the intended user's session environment;
+custom homes require separate Finder/desktop launch verification before release.
+Existing state is not moved or deleted by this scope change.

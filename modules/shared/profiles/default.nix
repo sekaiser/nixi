@@ -19,6 +19,8 @@ in {
     ./atuin-workstation.nix
     ./rust-workstation.nix
     ./go-workstation.nix
+    ./java-workstation.nix
+    ./omp-workstation.nix
     ./vim-workstation.nix
   ];
   options.modules.profiles = {

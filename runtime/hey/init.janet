@@ -50,9 +50,10 @@
 (defn untrap [entry]
   (array/remove-elt *exit-handlers* entry))
 
-(defn execute-clean [args &opt opts]
-  (let [proc (if opts
-               (os/spawn args :p opts)
+(defn execute-clean [args &opt opts environment]
+  (let [proc (cond
+               environment (os/spawn args :pe (merge environment (or opts {})))
+               opts (os/spawn args :p opts)
                (os/spawn args :p))]
     (with [proc proc]
       (var done false)

@@ -1,0 +1,34 @@
+Subject: [LOCAL PROPOSAL] Select canonical local literal GNU TLS trustfiles directly
+License: GPL-3.0-or-later (changes to GNU Emacs)
+
+Avoid directory enumeration only for canonical slash-prefixed local absolute
+literal filenames. Retain the original file-exists-p filter. Registered
+handlers, wildcard/escaped paths, relative/tilde/empty/directory-like forms
+and noncanonical paths use the original expansion and error behavior.
+This deliberately fixes parent-enumeration errors for both missing and
+existing literal candidates; it does not read CA contents or bypass TLS
+verification. Inaccessible CA contents still fail strict TLS verification.
+Apply after the inherited Emacs 31.1 stack and local TRAMP validation patch.
+No full consumer workflow or external TLS provider acceptance is claimed.
+
+--- a/lisp/net/gnutls.el
++++ b/lisp/net/gnutls.el
+@@ -376,7 +376,17 @@
+ (defun gnutls--get-files (files)
+   (cl-loop for f in files
+            if f do (setq f (if (functionp f) (funcall f) f))
+-           append (cl-delete-if-not #'file-exists-p (file-expand-wildcards f t))))
++           append (cl-delete-if-not
++                   #'file-exists-p
++                   (if (and (string-prefix-p "/" f)
++                            (not (find-file-name-handler f 'file-exists-p))
++                            (equal f (expand-file-name f))
++                            (not (string-match-p "[[*?]" f))
++                            (not (string-search "\\" f))
++                            (not (member (file-name-nondirectory f)
++                                         '("" "." ".."))))
++                       (list f)
++                     (file-expand-wildcards f t)))))
+ 
+ (defun gnutls-trustfiles ()
+   "Return a list of usable trustfiles."

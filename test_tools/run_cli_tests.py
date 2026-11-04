@@ -62,7 +62,8 @@ def run_isolated(command, timeout=60, output_limit=2 * 1024 * 1024, *, env=None,
                 if not (0 <= status <= 255 and 0 <= reason <= 5 and error_number >= 0):
                     raise RuntimeError("invalid test supervisor result")
                 failure = {0: None, 1: "test deadline exceeded",
-                           2: "test output limit exceeded"}.get(reason, "test supervision failed")
+                           2: "test output limit exceeded"}.get(
+                               reason, f"test supervision failed (reason {reason}, errno {error_number})")
                 if process.wait(timeout=max(0.01, deadline - time.monotonic())) != 0:
                     raise RuntimeError("test supervisor failed during cleanup")
                 break

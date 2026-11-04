@@ -5,11 +5,9 @@
   ...
 }: {
   config = lib.mkIf config.hey.enable {
-    programs.zsh.shellInit = lib.mkOrder 400 ''
-      if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-        . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-      fi
-    '';
+    # nix-darwin initializes Nix and orders its managed profiles before this
+    # hook. Re-sourcing an installer script here would prepend its legacy
+    # client over the selected system package.
     programs.zsh.interactiveShellInit = lib.mkBefore ''
       export fpath=( "${hey.runtimeDir}/zsh" "''${fpath[@]}" )
       autoload -Uz "''${fpath[1]}"/hey.*(.:t)

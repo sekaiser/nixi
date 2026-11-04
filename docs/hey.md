@@ -64,6 +64,15 @@ consumer checkout. `--flake` selects the consumer, not where to find Nixi's
 runtime. A consumer needs `flake.nix`, not a prescribed `hosts/HOST` directory.
 UTM is optional and is not involved in ordinary `hey sync` activation.
 
+Command registration records source paths without importing implementations.
+`hey --help`, command help and `hey which COMMAND` do not initialize command
+modules. Execution imports the selected command and its dependencies; a broken
+optional module fails when selected without blocking unrelated commands.
+Help reads the script header, so successful help does not establish that the
+implementation or its tools are usable. Missing selected modules fail explicitly;
+they do not fall back to a similarly named executable on PATH. The core Hey
+runtime remains required, and imported modules remain trusted executable code.
+
 ## Preview build cost before activation
 
 ```sh
@@ -83,8 +92,67 @@ to the Nix store. Import-from-derivation is disabled so a preview cannot start
 evaluation-time builds; configurations requiring it fail rather than silently
 falling back. Flakes/modules remain trusted code, and diagnostics may expose
 paths or configuration details. Keep private-host output local. `hey -! sync plan`
-or `hey sync plan --explain` prints the command without the Nix query. Normal
-`hey sync` retains its existing behavior; it does not scan CVEs or update pins.
+or `hey sync plan --explain` prints the command without the Nix query.
+Neither preview nor ordinary sync scans CVEs or updates pins.
+
+## Local sync builds and activation
+
+Run `hey sync` as your normal user. Evaluation and builds use that user's Nix
+configuration and private-input access, with `NIX_PATH` cleared and lock updates
+disabled. Impure evaluation remains explicit for existing consumer configurations.
+The build result is captured as one store output and temporarily GC-rooted while
+activation runs. Normal sync uses Nix directly for its JSON result; build-only
+commands still honor the optional `nom` preference.
+
+Only activation uses sudo. The packaged `nixi-system-activate` helper receives
+fixed candidate, selected-profile and running-system store paths. A source
+launcher builds that helper as the caller when needed. The privileged invocation
+starts with a clean environment; caller `NIX_CONFIG`, SSH agents, `DOTFILES` and
+Python import overrides are not forwarded. The helper uses pinned Nix programs,
+ignores root's per-user Nix configuration and operates on the default local system
+profile. No root flake evaluation, realization or private-input fetch is requested.
+
+| Action | Platform | Effect after building |
+| --- | --- | --- |
+| `switch` (default) | Linux/macOS | Select and activate the candidate; Linux also updates boot configuration |
+| `boot` | Linux | Select the candidate for boot, retaining the running system |
+| `test` | Linux | Activate without changing the selected profile |
+| `activate` | macOS | Activate the selected flake's built output without changing the profile |
+| `dry-activate` | Linux | Run the candidate's native activation preview as root |
+
+`hey -! sync` and `--explain` only print the plan; they do not invoke Nix, sudo,
+activation, locks or temporary build roots. `hey sync build` and `check`/`ch`
+remain unprivileged and do not activate. VM build actions select the NixOS VM
+output and write `result-vm`; cross-platform builds need appropriate Nix builders.
+
+Normal sync accepts `--max-jobs`/`-j`, `--cores`, `--option NAME VALUE`, `--offline`,
+`--keep-going`/`-k`, `--keep-failed`/`-K`, `--print-build-logs`/`-L`, `--show-trace`
+and `--fallback`. These options apply only to the user build. `--fast` is a
+compatibility flag: direct builds never re-execute a rebuild frontend. Unsupported
+remote targets, custom profiles, specialisations, bootloader flags and lock-update
+options fail explicitly; no privileged rebuild fallback is used. `--host` selects
+configuration for the local machine, not an SSH destination. Existing numeric
+generation rollback remains a separate operation; `sync --rollback` delegates to
+`hey profile rollback`.
+
+The helper verifies realized store paths, protected executables and unchanged
+selected/running checkpoints before mutation. A protected global lock serializes
+new helper transactions across users; the existing Hey profile lock also covers
+the caller's build and activation. Failed activation attempts restore the fixed
+profile/running outputs and Linux boot configuration when safe. A conflicting
+external change or failed recovery is reported for manual recovery. Exit status
+is preserved. This does not undo application data, Homebrew changes or arbitrary
+activation-script effects. An uncatchable kill can interrupt recovery and leave
+temporary roots; these are not automatically pruned.
+
+Supported activation assumes an existing local system and the modern Darwin
+activation layout. Legacy `activate-user`, bootstrap installations and other
+profiles require their own reviewed procedure. Do not run external rebuild,
+rollback or pruning tools concurrently: they do not share the helper's lock.
+Synthetic tests cover both platform command plans, not real privileged service
+or boot behavior. Disposable native acceptance and private-input compatibility
+remain release gates. Activating a user-built closure still grants administrative
+authority to its scripts; this is not a sandbox or a new passwordless sudo grant.
 
 ## Dependency maintenance
 
@@ -367,6 +435,7 @@ hey doctor
 hey doctor env
 hey doctor nix
 hey doctor secrets
+hey doctor secrets --strict
 hey doctor shell
 hey doctor sync
 ```
@@ -378,8 +447,26 @@ fail the diagnostic. Recognized unsafe settings warn without failing it. A `true
 result is not an attestation of daemon enforcement or permission to trust an
 unknown flake. Dry-run mode only prints the intended query.
 
+With `--verbose`, Nix doctor reports three identities separately: the Nix client
+selected by the caller's original PATH, the client selected by Hey's managed
+execution paths, and the connected daemon's reported version. Client paths are
+resolved through symlinks; process-name version labels are shown separately and
+are not used as daemon version evidence. Daily doctor preserves the parent's
+caller PATH when it starts the Nix diagnostic child.
+
+Different clients or versions produce a warning, without declaring either one
+vulnerable or outdated. Missing clients, denied connections, failed probes,
+invalid replies and unreported daemon versions fail the diagnostic. Only parsed
+identity fields are printed; raw version/store-info output and errors are
+withheld. The daemon probe uses Hey's client with
+[`nix store info --store daemon --json`](https://nix.dev/manual/nix/2.34/command-ref/new-cli/nix3-store-info).
+This reports the local daemon explicitly, independently of a consumer's default
+store selection. No profiles or configuration are changed.
+
 Use `hey doctor secrets` to find inline secret markers without printing secret
-values. See [secrets.md](secrets.md) for the SOPS migration contract.
+values. `--strict` exits 1 on findings; scan failures exit 2 with or without it.
+This is a limited marker scan, not proof that credentials are absent. See
+[secrets.md](secrets.md) for coverage and the SOPS migration contract.
 The default daily checks and `hey dev doctor` only inspect optional shell/editor/
 agent subsystems advertised as enabled by the generated host metadata.
 
@@ -472,7 +559,22 @@ keyed by the plugin set. See [migration.md](migration.md) for legacy zgenom stat
 
 Enable `modules.shell.awscli2` to generate AWS configuration and the non-secret
 `hey/aws.json` capability metadata. EKS tooling and SAML support are independent:
-`eks.enable` defaults to true, while `saml.enable` is opt-in.
+both `eks.enable` and `saml.enable` default to false. AWS-only use adds the AWS
+CLI without Nixi's Kubernetes collection or k9s files. To retain that collection:
+
+```nix
+modules.shell.awscli2 = {
+  enable = true;
+  eks.enable = true;
+};
+```
+
+EKS enablement adds `kubectl`, `k9s`, `kubectx`, `stern` and managed k9s files.
+The `eks-bastion` preset defaults it on; an explicit false overrides that preset.
+The flag controls this adapter's tooling/files and reported capability, not
+authorization to use Kubernetes. Independently declared packages/files remain.
+SSO and configured SAML login through `hey eks login` also work with EKS tooling
+disabled. Generated configuration changes take effect after a reviewed rebuild.
 
 AWS/SAML typed INI fields reject control characters, and section names reject
 whitespace, brackets, quotes and backslashes. `extraConfig` is an explicit
@@ -512,3 +614,9 @@ username/password files. Each must contain exactly one nonempty line, with an
 optional LF or CRLF ending; meaningful spaces are preserved. Inputs are
 validated before atomically replacing the root-readable runtime credential
 file. Keep these as runtime secret paths, not Nix-store credential contents.
+The config and all file references are read through protected root-owned paths
+and copied to a private runtime snapshot. Scripts, plugins, nested config files
+and arbitrary output directives are rejected. The selected user receives no
+passwordless service rights unless
+`modules.profiles.eks-bastion.openvpn.allowUserServiceControl = true` is explicit.
+See [the protected client contract](security.md#protected-openvpn-client).

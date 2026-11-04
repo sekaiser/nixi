@@ -9,11 +9,18 @@ can select explicit colon-separated scan roots. This is a local hygiene check,
 not a replacement for scanning the exact publication export.
 
 The scan includes common bootstrap leak patterns such as Tailscale auth key
-markers, k3s node tokens, exported SOPS age keys, and Kubernetes-style
-`password: <base64>` values in inline manifests.
+markers, k3s node tokens, exported SOPS age keys, Kubernetes-style
+`password: <base64>` values, common crypt/bcrypt/Argon2 password-hash prefixes,
+and PEM, OpenSSH, PGP and PuTTY private-key headers. These are marker checks;
+unrecognized formats, binary contents and excluded files can still contain
+credentials. A clean result does not certify that a tree is safe to publish.
 
 Inline markers are reported as warnings, including matches in synthetic fixtures.
-A scan error, such as a missing `rg` executable, is treated as a doctor failure.
+Use `hey doctor secrets --strict` for a gate: exit 0 means no markers in the
+selected roots, 1 means findings, and 2 means an incomplete or failed scan.
+Without `--strict`, findings retain exit 0; scan failures still exit 2.
+`hey doctor --strict` forwards strict mode to its secret check and fails the
+daily check if that subcommand fails. Empty scan roots are a failure.
 Hey ignores ripgrep's user configuration and reads structured scan events.
 Only escaped filenames and line numbers are reported; raw stdout, stderr and
 parser errors are withheld on failure, including partially completed scans.
@@ -25,15 +32,99 @@ provider and secret names in your private consumer. The service modules accept:
 - `modules.services.k3s-server.agentTokenFile`
 - `modules.services.tailscale.keyFile`
 
-SAML and split OpenVPN credential files must be regular files no larger than
+SAML and OpenVPN credential files must be regular files no larger than
 64 KiB. Symlinks used by secret providers are supported; the opened file is
 checked. Reads have a five-second deadline and preserve meaningful whitespace.
 EKS doctor uses the same SAML format validator and input limits as login. Dry
 runs never open these files, and diagnostics never perform a login.
+The root-running OpenVPN adapter additionally requires protected root-owned
+input traversal and a restricted config; see [its security contract](security.md#protected-openvpn-client).
+For sensitive SAML usernames, leave `username = null` and supply `usernameFile`
+as a runtime secret path. Private Nix source and overlays still produce public
+store outputs when they embed an inline username.
 Git secret installation is limited to 1 MiB and a 45-second CLI operation;
 oversized input leaves an existing destination intact. No values appear in
 input-validation errors. These limits cannot force an uninterruptible kernel
 operation to return; see the process-supervisor limitations in security.md.
+
+## Retiring installed Git secret copies
+
+Removing a `modules.shell.git.secrets` declaration, changing its target or
+disabling Git leaves previously installed copies in place. No activation scans
+for or deletes undeclared files. Retirement does not revoke credentials or erase
+source files, backups, filesystem snapshots or historical store exposure.
+
+For future installations, explicitly opt into private runtime receipts:
+
+```nix
+modules.shell.git.secretTracking.enable = true;
+```
+
+This records each completed mode-0600 installation and installs the
+`nixi-install-user-file` CLI for the selected user. Receipts default to
+`${home.stateDir}/nixi/git-secret-copies`; filenames are the SHA-256 of the
+relative secret target plus `.json`. `secretTracking.receiptDirectory` may
+override the directory inside that user's home, without overlapping Git
+destinations. Both receipt and lock are private mode-0600 user-owned files.
+Receipts contain the destination, file identity/metadata, a content fingerprint
+and a random review token, never source paths or credential contents. Keep them
+private: fingerprints can reveal information if disclosed. No receipt or secret
+content is generated during Nix evaluation or copied into a public store output.
+
+Existing untracked copies are never adopted by a cleanup command. Enabling
+tracking takes effect on the next explicitly performed installation; it does
+not inspect or retire historical copies. A failed/interrupted receipt write can
+leave an installed file without current provenance. Such a copy is retained,
+and an older receipt cannot authorize its removal.
+
+After removing a declaration and reviewing dependencies on the old copy, choose
+its exact known receipt. Run as the recipient, without sudo:
+
+```sh
+nixi-install-user-file --preview-retirement /absolute/path/to/receipt.json
+```
+
+Preview creates no files. A `ready` result includes the destination and a random
+`reviewToken`, without displaying file contents or fingerprints. Review that
+specific destination before invoking the destructive step:
+
+```sh
+nixi-install-user-file --retire-receipt /absolute/path/to/receipt.json \
+  --review-token TOKEN_FROM_THIS_PREVIEW
+```
+
+Apply revalidates the receipt, owner, private permissions, single-link regular
+file type, device/inode, timestamps, size and content fingerprint. It refuses
+unknown, modified, replaced, foreign, symlinked, hardlinked or unsafe files.
+Reinstallation changes the token, invalidating an earlier preview. Only the
+recorded copy is removed; sources, neighboring files, directories, receipts and
+locks are retained. There is no recursive or broad cleanup operation.
+
+The helper pins trusted non-symlink directories and runs entirely as the
+recipient. Cooperating tracked installs/retirements share the receipt lock.
+Stop applications or other writers first: the lock does not coordinate their
+open descriptors, and this is not a boundary against a malicious process
+running as the same user. A receipt does not prove a file is unused or that its
+credential has been revoked. Reads are bounded and CLI operations have a
+45-second deadline; error output omits parser input and credential values.
+
+Apply first captures the destination in a private mode-0700 `.nixi-retire-*`
+directory beside it, then checks the captured file again before unlinking.
+Detected changes or handled failures attempt restoration without overwriting a
+new destination. An uncatchable interruption can leave the payload in that
+private directory. Preview reports `pending`; reinstallation and another apply
+refuse to proceed. To recover explicitly:
+
+```sh
+nixi-install-user-file --restore-retirement /absolute/path/to/receipt.json
+```
+
+Restoration never overwrites a new target or recursively removes unknown files.
+An unsupported captured file type or competing target requires manual review;
+the quarantine is retained. Restoration can change file metadata, so a restored
+copy may need a new reviewed installation before it is eligible for retirement.
+Interrupted-process fixtures do not establish power-loss durability or secure
+erasure. Native Linux/root/VM and consumer recovery acceptance remain separate.
 
 ## Protected SOPS sources on macOS
 
@@ -126,7 +217,7 @@ that pattern as an inline secret marker.
 Verify the migration with:
 
 ```sh
-hey doctor secrets
+hey doctor secrets --strict
 hey check eval
 hey check build analytics
 hey sync build

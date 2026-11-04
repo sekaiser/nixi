@@ -125,6 +125,21 @@
 (defn command-names []
   (sort (map string (keys *commands*))))
 
+(defn register-lazy [name file]
+  # Help/which need only the source header/path. Requiring a module belongs to
+  # execution, so an unavailable optional dependency cannot break other commands.
+  # Keep registrations made by a command imported as another command's dependency.
+  (unless (get *commands* name)
+    (def source (path/abspath file))
+    (defn invoke [& args]
+      (require source)
+      (let [implementation (get *commands* name)]
+        (when (or (= invoke (get implementation :cmd))
+                  (not= source (get implementation :file)))
+          (errorf "Command module did not register %s: %s" name source))
+        ((implementation :cmd) ;args)))
+    (put *commands* name {:cmd invoke :file source})))
+
 (defn- defcmd* [name cmd file]
   (put *commands* name {:cmd cmd :file file}))
 

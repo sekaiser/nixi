@@ -89,7 +89,6 @@ in {
     services.k3s = {
       environmentFile = "/var/tailscale/ip";
       extraFlags = [
-        "--cluster-cidr=${cfg.podCIDR}"
         "--service-cidr=${cfg.serviceCIDR}"
         "--bind-address \${TAILSCALE_IP}"
         "--advertise-address \${TAILSCALE_IP}"
@@ -98,7 +97,7 @@ in {
         "--node-external-ip \${TAILSCALE_IP}"
       ];
     };
-    systemd.services.k3s = {
+    systemd.services.k3s = mkIf config.services.k3s.enable {
       after = ["tailscale-fetch-ip.service"];
       requires = ["tailscale-fetch-ip.service"];
     };

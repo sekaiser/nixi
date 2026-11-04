@@ -2,22 +2,23 @@
   "version": 1,
   "overrides": {
     "openssl_3_6": {
-      "fixedVersion": "3.6.4",
+      "fixedVersion": "3.6.5",
       "source": {
-        "url": "https://github.com/openssl/openssl/releases/download/openssl-3.6.4/openssl-3.6.4.tar.gz",
-        "sha256": "9bffaa1ad1e07b354c21bd3324ec02fa15579f45a7d0494b3e74bc449b7333ef"
+        "url": "https://github.com/openssl/openssl/releases/download/openssl-3.6.5/openssl-3.6.5.tar.gz",
+        "sha256": "a2157c2830efdec3788939b00c9b0638306d3f0bbb76dc4832ee503bb397df98"
       },
       "advisories": [
         "https://openssl-library.org/news/openssl-3.6-notes/",
-        "https://openssl-library.org/news/secadv/20260825.txt"
+        "https://openssl-library.org/news/secadv/20260825.txt",
+        "https://openssl-library.org/news/secadv/20260929.txt"
       ],
-      "reviewed": "2026-09-10",
-      "reviewBy": "2026-10-10",
-      "reason": "The reviewed package snapshots include an older OpenSSL 3.6 release. Temporarily apply the upstream security release across the affected package sets.",
+      "reviewed": "2026-11-03",
+      "reviewBy": "2026-12-03",
+      "reason": "Opt-in compatibility floor for the August and September 2026 fixes. Default reviewed package snapshots already select OpenSSL 3.6.5 or 3.5.9; this overlay is not required by them. Source URL and hash match the reviewed stable Nixpkgs recipe. See docs/dependencies.md.",
       "removeWhen": "All supported default Nixpkgs snapshots supply the applicable fixes without this override; verify base and unstable package sets on Linux and Darwin, then remove the override and its record.",
       "validation": [
         "checks/package-context.nix",
-        "Native Linux and Darwin builds and consumer rollout remain required; evaluation alone is not deployment verification."
+        "Native package/host checks qualify source integration; deployment and process restarts are separate."
       ]
     }
   }

@@ -21,6 +21,8 @@ in {
   };
   config = lib.mkIf cfg.enable {
     user.packages = [pkgs.alacritty];
+    # nix-darwin discovers application bundles through system packages.
+    environment.systemPackages = lib.optionals pkgs.stdenv.isDarwin [pkgs.alacritty];
     home.configFile."alacritty/alacritty.toml".text =
       ''
         [env]

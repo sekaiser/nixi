@@ -111,6 +111,7 @@
           users.users.alice.home = lib.mkForce "/custom/alice";
           modules.agents.codex.enable = true;
           modules.agents.omp.enable = true;
+          modules.agents.omp.manageConfig = true;
           modules.services.ssh.userCertificates.fixture.caKeyFile = "/fixture/ca";
         }
       ];
@@ -189,7 +190,9 @@
     && moved.home.runtimeDir == "/custom/alice/.local/runtime"
     && moved.home-manager.users.alice.home.homeDirectory == "/custom/alice"
     && moved.modules.agents.codex.codexHome == "/custom/alice/.codex"
-    && moved.env.CODEX_HOME == "/custom/alice/.codex"
+    && !(moved.env ? CODEX_HOME)
+    && moved.home-manager.users.alice.home.sessionVariables.CODEX_HOME == "/custom/alice/.codex"
+    && !(moved.home-manager.users.bob.home.sessionVariables ? CODEX_HOME)
     && moved.modules.agents.omp.stateDir == "/custom/alice/.omp"
     && moved.hey.capabilities.agents.omp.files."omp config file exists" == "/custom/alice/.omp/agent/config.yml"
     && !(moved.home-manager.users.alice.home.file ? ".omp/agent/config.yml")

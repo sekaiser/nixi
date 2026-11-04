@@ -137,7 +137,7 @@
     };
   };
   old = (security {} (fixture "3.6.2")).openssl_3_6;
-  current = (security {} (fixture "3.6.4")).openssl_3_6;
+  current = (security {} (fixture fix.fixedVersion)).openssl_3_6;
   newer = (security {} (fixture "3.6.9")).openssl_3_6;
   fix = (builtins.fromJSON (builtins.readFile ../security/overrides.json)).overrides.openssl_3_6;
 in
@@ -156,6 +156,6 @@ in
       marker = spec.inputs.nixi.overlays.marker;
     });
   assert old.version == fix.fixedVersion && old.src == fix.source;
-  assert current.version == "3.6.4" && current ? overrideAttrs;
+  assert current.version == fix.fixedVersion && current ? overrideAttrs;
   assert newer.version == "3.6.9" && newer ? overrideAttrs;
     runCommand "package-context-check" {} ''touch "$out"''

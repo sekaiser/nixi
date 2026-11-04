@@ -38,7 +38,7 @@ in {
       lib.nameValuePair "${cfg.skillsDirectory}/${name}" {inherit source;})
     cfg.skills;
 
-    env.CODEX_HOME = cfg.codexHome;
+    home-manager.users.${config.user.name}.home.sessionVariables.CODEX_HOME = cfg.codexHome;
 
     user.packages = optional (cfg.package != null) cfg.package;
 

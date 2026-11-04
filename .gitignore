@@ -23,3 +23,13 @@ runtime/**/*.dylib
 vendor/janet/**/*.a
 vendor/janet/**/*.so
 vendor/janet/**/*.dylib
+
+# Local work records and preparation artifacts
+/TODO.md
+/GOALS.md
+/Notes.md
+/reviews/
+/security/reviews/
+/security/proposals/
+/docs/backlog.md
+/docs/security-review.md

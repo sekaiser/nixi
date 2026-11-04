@@ -12,8 +12,10 @@
   inherit (hey.lib) mkBoolOpt' mkOpt';
   cfg = config.modules.editors.emacs;
   composeDoomDir = import ../../../lib/internal/compose-doom-dir.nix {inherit pkgs;};
-  # The pinned Nixpkgs has a 31.x recipe, but still targets a prerelease.
-  # Pin the stable release without updating unrelated system packages.
+  # Use the platform's 31.x recipe with the official GNU release archive.
+  # The reviewed pins fetch Git even with srcRepo=false. That argument selects
+  # archive build steps; this src override selects the actual release archive.
+  # Keep inherited Nixpkgs patches and platform settings (emacs-policy checks).
   baseEmacs =
     (
       if pkgs.stdenv.isDarwin
@@ -27,6 +29,13 @@
       url = "mirror://gnu/emacs/emacs-31.1.tar.xz";
       hash = "sha256-HaV5DZWAyBkytb9wBjMRRGjaezQS1p+qdn2uv5dPRYY=";
     };
+    # Whole-string username validation requires the inherited upstream TRAMP fix.
+    patches =
+      old.patches
+      ++ [
+        ../../../packages/emacs-tramp-user-full-match.patch
+        ../../../packages/emacs-gnutls-literal-trustfiles.patch
+      ];
     meta =
       old.meta
       // {
@@ -38,6 +47,28 @@
     inherit (cfg) doomLocalDir;
     doomDir = composeDoomDir {inherit (cfg) doomDir extraConfig;};
     experimentalFetchTree = true;
+    # Preserve the base guard when Doom selects an external GNU ELPA Flymake.
+    emacsPackageOverrides = _self: super: {
+      flymake = super.flymake.overrideAttrs (old:
+        assert old.version == "1.4.7"; {
+          # ELPA skips stdenv unpacking and installs directly from src.
+          src =
+            pkgs.runCommand "flymake-1.4.7.tar" {
+              src = old.src;
+              guardPatch = ../../../packages/flymake-trusted-backends.patch;
+            } ''
+              printf '%s  %s\n' '9f67e72a0bc16e5e7889cc76c1cf4511666349c94a5244b651149c3910d92586' "$src" | sha256sum --check --strict -
+              tar --extract --file "$src" --same-permissions
+              patchOutput="$(patch --batch --forward --fuzz=0 -p1 --directory=flymake-1.4.7 < "$guardPatch")"
+              printf '%s\n' "$patchOutput"
+              case "$patchOutput" in
+                *offset*|*fuzz*) echo "Flymake guard patch must apply without offsets or fuzz" >&2; exit 1 ;;
+              esac
+              tar --create --file "$out" --format=gnu --sort=name --mtime=@1 \
+                --owner=0 --group=0 --numeric-owner flymake-1.4.7
+            '';
+        });
+    };
     # Native Tree-sitter grammars must be added explicitly to Emacs' load path.
     extraPackages = epkgs: [epkgs.treesit-grammars.with-all-grammars];
     extraBinPackages =
@@ -49,32 +80,10 @@
     git
     ripgrep
     fd
-    gnutls
-    coreutils
-    findutils
-    gnumake
-    cmake
-    libtool
-    imagemagick
-    zstd
-    (aspellWithDicts (ds: with ds; [en en-computers en-science]))
-    ffmpegthumbnailer
-    mediainfo
-    vips
-    editorconfig-core-c
-    sqlite
-    automake
-    autoconf
-    pkg-config
-    libpng
-    zlib
-    poppler
-    clang-tools
-    age
   ];
 in {
   options.modules.editors.emacs = {
-    enable = mkBoolOpt' false "Whether to install declaratively built Doom Emacs and its external tools.";
+    enable = mkBoolOpt' false "Whether to install declaratively built Doom Emacs with Git, ripgrep and fd. Optional workstation helpers and preferences belong to the doom-workstation preset.";
     package = mkOpt' package emacs31 "Emacs 31.1: native Cocoa on Darwin, PGTK on Linux. Uses the pinned Nixpkgs 31.x recipe with the stable release source, without additional Emacs Plus patches.";
     doomDir = mkOpt' path ../../../assets/doom-minimal "Versioned Doom configuration directory bundled into the Nix build. No workstation preferences by default.";
     extraConfig = mkOpt' lib.types.lines "" "Emacs Lisp appended after the selected Doom config.el. Stored in Nix outputs: never include secrets or import private notes as Nix paths.";
@@ -98,15 +107,7 @@ in {
     user.packages =
       [cfg.finalPackage]
       ++ map lib.lowPrio dependencies
-      ++ optionals pkgs.stdenv.isLinux [pkgs.binutils]
       ++ optionals cfg.latex [pkgs.texlive.combined.scheme-medium]
       ++ cfg.extraPackages;
-
-    environment.shellAliases = {
-      e = "emacsclient --alternate-editor=emacs --no-wait";
-      et = "emacsclient --alternate-editor=emacs --tty";
-      emacs-debug = "emacs --debug-init";
-    };
-    fonts.packages = [pkgs.nerd-fonts.symbols-only];
   };
 }

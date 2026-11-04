@@ -2,9 +2,11 @@
   nixi,
   lib,
   python3,
+  callPackage,
   runCommand,
   ...
 }: let
+  core = callPackage ../packages/tencent-memory-core.nix {};
   outputs = nixi.lib.mkHostFlake {
     inputs = {
       self.outPath = ./fixtures/cli-host;
@@ -55,5 +57,8 @@ in
       # Nix's Darwin sandbox forbids even loopback listeners. Keep the native
       # check offline; run the opt-in real Core test separately outside it.
       python "$src/test_tools/test_agent_memory.py"
+      # Data URLs need no listener; native CI must also gate the bundled fetch.
+      ${core.nodejs}/bin/node "$src/test_tools/probe_memory_http.mjs" \
+        --require-bundled ${core}
       touch "$out"
     ''
