@@ -1033,7 +1033,7 @@
     },
     {
       "path": "devshell.nix",
-      "sha256": "1109c989fb34aa697705dea20df3fc6050a2780ce9777351302fef14fe5d8fb2",
+      "sha256": "a1940fff777085b636963ceb2b56e43d782bbf71afe07252a241426dc9d18d01",
       "executable": false
     },
     {

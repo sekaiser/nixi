@@ -28,7 +28,6 @@
   '';
   nixConfig = builtins.toFile "nix.conf" ''
     warn-dirty = false
-    http2 = true
     experimental-features = nix-command flakes
   '';
 in
