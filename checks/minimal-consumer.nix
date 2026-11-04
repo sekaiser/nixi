@@ -93,6 +93,12 @@
     vim = enableFeature host "editors" "vim";
     atuin = enableFeature host "shell" "atuin";
     rustPreset = enableFeature host "profiles" "rust-workstation";
+    stableRust = rust.extendModules {modules = [{modules.dev.rust.packageSet = "stable";}];};
+    stableRustPreset = rustPreset.extendModules {modules = [{modules.dev.rust.packageSet = "stable";}];};
+    selectsRustPackages = variant: source: names: let
+      selected = map (p: p.drvPath) variant.config.users.users.alice.packages;
+    in
+      lib.all (name: builtins.elem source.${name}.drvPath selected) names;
     goPreset = enableFeature host "profiles" "go-workstation";
     goOverride = goPreset.extendModules {
       modules = [
@@ -183,6 +189,10 @@
     && hasPackage "fzf" zshPreset
     && hasPackage "rustc" rust
     && hasPackage "cargo" rust
+    && selectsRustPackages rust host.pkgs.unstable ["rustc" "cargo"]
+    && selectsRustPackages stableRust host.pkgs ["rustc" "cargo"]
+    && selectsRustPackages rustPreset host.pkgs.unstable ["rustfmt" "clippy" "rust-analyzer" "cargo-llvm-cov"]
+    && selectsRustPackages stableRustPreset host.pkgs ["rustfmt" "clippy" "rust-analyzer" "cargo-llvm-cov"]
     && !hasPackage "rustfmt" rust
     && !hasPackage "cargo-audit" rust
     && hasPackage "go" go

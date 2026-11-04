@@ -90,6 +90,11 @@ likewise live in the optional `atuin-workstation`, `rust-workstation`,
 `go-workstation` and `vim-workstation` profiles. See the migration notes for their
 scope. Explicitly disabling a base tool also suppresses its preset's effects.
 
+`modules.dev.rust.packageSet` selects `"stable"` or `"unstable"` Nixpkgs for
+Rust and Cargo, plus the workstation profile's rustfmt, Clippy, rust-analyzer
+and cargo-llvm-cov. The default is `"unstable"`. Select `"stable"` when you need
+the stable branch's tested toolchain; other Rust utilities retain their sources.
+
 Keep personal Doom preferences in your private host configuration. Set
 `modules.editors.emacs.extraConfig` to Emacs Lisp appended after the selected
 `doomDir`'s `config.el`; `init.el` and `packages.el` remain unchanged. For example:

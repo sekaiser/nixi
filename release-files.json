@@ -888,7 +888,7 @@
     },
     {
       "path": "checks/minimal-consumer.nix",
-      "sha256": "481a18b22fc026692572349c687717be4e87e75ef7b1017405919ffb16500304",
+      "sha256": "701a038aaaa4d08972f4da22157f07091e5f23f8b9e07bfddb505ec8b66dc46b",
       "executable": false
     },
     {
@@ -1073,7 +1073,7 @@
     },
     {
       "path": "docs/getting-started.md",
-      "sha256": "f43c09d2248e6e28f72239a402b8becf8e8f52bcbf0d9305dca611de63b41055",
+      "sha256": "daa6dc74e8a93b115f564a4930db479c1830b308ec15fff99f707fd774dc1ad8",
       "executable": false
     },
     {
@@ -1543,7 +1543,7 @@
     },
     {
       "path": "modules/shared/dev/rust.nix",
-      "sha256": "24e3afa8871a6becdc7a5c3012441e2fc76541aa1431c5faf7681576fbb94be1",
+      "sha256": "47c884f478fb108c4ceffbc22a8a3bcd3b62715fc3014b9e0a054c244227bed2",
       "executable": false
     },
     {
@@ -1618,7 +1618,7 @@
     },
     {
       "path": "modules/shared/profiles/rust-workstation.nix",
-      "sha256": "e27b55fb4b1d88bc160fbf9a27b51465ff0ef6a8c9f5617c7d3a498dabe20d8f",
+      "sha256": "0bf3b827f001a2a061a6aa537df6bff9ee58d882191c4368e8cec76523474920",
       "executable": false
     },
     {
