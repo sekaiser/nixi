@@ -1628,6 +1628,15 @@ else:
         tmux("source-file", str(config / "tmux.conf"))
         return tmux, config, project, log
 
+    def tmux_binding(self, tmux, table, key):
+        # tmux 3.7b sends single-key results to a client's status line. Read the
+        # complete table so detached fixture servers return the binding on stdout.
+        pattern = r"^bind-key\s+(?:-r\s+)?-T\s+" + re.escape(table) + r"\s+" + re.escape(key) + r"\s+"
+        for line in tmux("list-keys", "-T", table).stdout.splitlines():
+            if re.match(pattern, line):
+                return line + "\n"
+        self.fail(f"Missing tmux binding {table}/{key}")
+
     @unittest.skipUnless(shutil.which("tmux") and shutil.which("zsh"), "tmux/zsh are not available")
     def test_tmux_config_paths_bindings_and_popup_data_are_literal(self):
         tmux, config, project, log = self.start_tmux("xdg")
@@ -1648,7 +1657,7 @@ else:
 
         for key in ("G", "N", "E"):
             command = re.sub(r"^bind-key\s+-T\s+\S+\s+\S+\s+", "",
-                             tmux("list-keys", "-T", "prefix", key).stdout)
+                             self.tmux_binding(tmux, "prefix", key))
             self.assertNotIn("pane_current_path", command)
             args = check_popup(command)
             if key == "N":
@@ -1660,7 +1669,7 @@ else:
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("nix: " + state + "\n", result.stdout)
 
-        menu = tmux("list-keys", "-T", "prefix", "Space").stdout
+        menu = self.tmux_binding(tmux, "prefix", "Space")
         for title in ("Git status", "Nix context", "Direnv context"):
             callback = re.search(re.escape(json.dumps(title)) + r" \S+ \{ (.*?) \}", menu).group(1)
             tmux("source-file", "-", input=callback)
@@ -1674,7 +1683,7 @@ else:
         tmux("set-environment", "-gu", "DOTFILES_BIN")
         for key, expected in [("H", ["tmux", "swap-pane", "left"]), ("r", ["reload", "tmux"])]:
             command = re.sub(r"^bind-key\s+-T\s+\S+\s+\S+\s+", "",
-                             tmux("list-keys", "-T", "prefix", key).stdout)
+                             self.tmux_binding(tmux, "prefix", key))
             tmux("source-file", "-", input=command)
             self.assertEqual(json.loads(hey_log.read_text()), expected)
 
@@ -1685,7 +1694,7 @@ else:
             with self.subTest(theme=theme):
                 if theme:
                     tmux("source-file", str(ROOT / f"modules/shared/themes/{theme}/config/tmux.conf"))
-                    binding = tmux("list-keys", "-T", "root", "MouseDown1Status").stdout
+                    binding = self.tmux_binding(tmux, "root", "MouseDown1Status")
                     callback = re.search(r" \{ (.*?) \}", binding).group(1)
                     callback = callback.replace("#{q:mouse_status_range}", "git")
                     tmux("source-file", "-", input=callback)
